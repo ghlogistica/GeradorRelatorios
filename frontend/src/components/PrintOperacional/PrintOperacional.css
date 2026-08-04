@@ -1,0 +1,141 @@
+/* Design focado em chão de fábrica: fontes grandes, alto contraste, botões fáceis de clicar (touchscreen) */
+
+.operacional-container {
+    max-width: 800px;
+    margin: 40px auto;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    padding: 0 20px;
+  }
+  
+  .operacional-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .operacional-header h1 {
+    font-size: 2.5rem;
+    color: #1a1a2e;
+    margin-bottom: 5px;
+  }
+  
+  .operacional-header p {
+    color: #555;
+    font-size: 1.2rem;
+  }
+  
+  .operacional-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border: 1px solid #e1e4e8;
+  }
+  
+  .form-group-large {
+    margin-bottom: 25px;
+  }
+  
+  .form-group-large label {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .large-input {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.5rem;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+  
+  .large-input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+  }
+  
+  .dynamic-inputs-area {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px dashed #eee;
+  }
+  
+  .btn-imprimir {
+    width: 100%;
+    padding: 25px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: #198754; /* Verde sucesso */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    text-transform: uppercase;
+    box-shadow: 0 6px 0 #146c43;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-sizing: border-box;
+  }
+  
+  .btn-imprimir:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 #146c43;
+  }
+  
+  .btn-imprimir.loading {
+    background-color: #6c757d;
+    box-shadow: 0 6px 0 #5c636a;
+    cursor: not-allowed;
+  }
+  
+  /* Area de Preview de Sucesso */
+  .preview-card {
+    margin-top: 30px;
+    background: #f8f9fa;
+    border-left: 6px solid #0d6efd;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .preview-header h3 {
+    margin-top: 0;
+    color: #0d6efd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #e1e4e8;
+    font-size: 1.1rem;
+  }
+  
+  .preview-row:last-child {
+    border-bottom: none;
+  }
+  
+  .preview-row strong {
+    color: #555;
+  }
+  
+  .preview-row span {
+    font-weight: 600;
+    color: #111;
+  }
