@@ -5,9 +5,7 @@ let app;
 let db;
 
 try {
-  app = initializeApp({
-    credential: applicationDefault()
-  });
+  app = initializeApp();
   db = getFirestore(app);
   console.log('🔥 Conectado ao Firebase com sucesso!');
 } catch (error) {

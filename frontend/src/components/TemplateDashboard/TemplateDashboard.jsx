@@ -14,9 +14,15 @@ export default function TemplateDashboard() {
       try {
         const res = await fetch('/api/templates');
         const data = await res.json();
-        setTemplates(data);
+        if (res.ok && Array.isArray(data)) {
+          setTemplates(data);
+        } else {
+          console.error('Erro na API:', data.error || 'Resposta inválida');
+          setTemplates([]); // Garante que é um array para não quebrar o .map
+        }
       } catch (error) {
         console.error('Erro ao buscar templates:', error);
+        setTemplates([]);
       }
     };
     fetchTemplates();
