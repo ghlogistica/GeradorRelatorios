@@ -4,6 +4,7 @@ import './TemplateEditor.css';
 export default function TemplateEditor() {
   // 1. Configuração Geral
   const [nomeTemplate, setNomeTemplate] = useState('');
+  const [tipoDocumento, setTipoDocumento] = useState('etiqueta');
   const [queries, setQueries] = useState([{ id: Date.now(), conexao_id: '1', nome_alias_tabela: 'QueryPrincipal', query_sql: '' }]);
   const [configFisica, setConfigFisica] = useState({
     largura: 10,
@@ -126,7 +127,14 @@ export default function TemplateEditor() {
       alert('Por favor, defina um nome para o Template (1. Configuração Geral).');
       return;
     }
-    const payload = { nomeTemplate, configFisica, queries, camposFiltro, elementosCanvas };
+    const payload = { 
+      nomeTemplate, 
+      tipo_documento: tipoDocumento,
+      configuracoes_impressao: configFisica, 
+      queries, 
+      parametros_esperados: camposFiltro, 
+      elementosCanvas 
+    };
     try {
       const res = await fetch('/api/templates', {
         method: 'POST',
@@ -169,15 +177,32 @@ export default function TemplateEditor() {
               />
             </div>
 
+            <div className="form-group">
+              <label>Tipo de Documento</label>
+              <select 
+                value={tipoDocumento} 
+                onChange={(e) => {
+                  const tipo = e.target.value;
+                  setTipoDocumento(tipo);
+                  if (tipo === 'relatorio_a4') {
+                    setConfigFisica({ ...configFisica, largura: 21, altura: 29.7 });
+                  }
+                }}
+              >
+                <option value="etiqueta">Etiqueta Zebra (Personalizada)</option>
+                <option value="relatorio_a4">Relatório A4 (Impressora Comum)</option>
+              </select>
+            </div>
+
             <div className="layout-config-group">
               <div className="form-group-row">
                 <div className="form-group">
                   <label>Largura (cm)</label>
-                  <input type="number" step="0.1" value={configFisica.largura} onChange={(e) => setConfigFisica({...configFisica, largura: parseFloat(e.target.value)})} />
+                  <input type="number" step="0.1" disabled={tipoDocumento === 'relatorio_a4'} value={configFisica.largura} onChange={(e) => setConfigFisica({...configFisica, largura: parseFloat(e.target.value)})} />
                 </div>
                 <div className="form-group">
                   <label>Altura (cm)</label>
-                  <input type="number" step="0.1" value={configFisica.altura} onChange={(e) => setConfigFisica({...configFisica, altura: parseFloat(e.target.value)})} />
+                  <input type="number" step="0.1" disabled={tipoDocumento === 'relatorio_a4'} value={configFisica.altura} onChange={(e) => setConfigFisica({...configFisica, altura: parseFloat(e.target.value)})} />
                 </div>
               </div>
               <div className="form-group-row">
@@ -306,7 +331,7 @@ export default function TemplateEditor() {
         {/* CENTRO: Canvas da Etiqueta */}
         <main className="editor-main-canvas">
           <h2>3. Canvas da Etiqueta ({configFisica.largura}cm x {configFisica.altura}cm)</h2>
-          <div className="canvas-wrapper">
+          <div className="canvas-wrapper" style={tipoDocumento === 'relatorio_a4' ? { backgroundColor: '#e2e8f0', padding: '20px' } : {}}>
             <div 
               className="etiqueta-canvas"
               onDrop={handleDropCanvas}

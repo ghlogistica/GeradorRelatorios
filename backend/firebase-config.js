@@ -1,11 +1,25 @@
-const { initializeApp, applicationDefault } = require('firebase-admin/app');
+const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const fs = require('fs');
+const path = require('path');
 
 let app;
 let db;
 
 try {
-  app = initializeApp();
+  const serviceAccountPath = path.join(__dirname, 'geradorrelatorios-c53bb-firebase-adminsdk-fbsvc-5f6329d11c.json');
+  
+  if (fs.existsSync(serviceAccountPath)) {
+    console.log('📄 Usando chave de serviço JSON local para o Firebase...');
+    const serviceAccount = require(serviceAccountPath);
+    app = initializeApp({
+      credential: cert(serviceAccount)
+    });
+  } else {
+    console.log('☁️ Usando credenciais padrão do ambiente (Cloud Run) para o Firebase...');
+    app = initializeApp();
+  }
+  
   db = getFirestore(app);
   console.log('🔥 Conectado ao Firebase com sucesso!');
 } catch (error) {
