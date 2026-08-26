@@ -1,19 +1,19 @@
-const admin = require('firebase-admin');
+const { initializeApp, applicationDefault } = require('firebase-admin/app');
+const { getFirestore } = require('firebase-admin/firestore');
 
-// No Google Cloud Run, a autenticação normalmente é automática usando a conta de serviço padrão (Default Service Account).
-// Para ambiente de desenvolvimento local (seu computador), você deve baixar a chave do Firebase Admin (JSON)
-// e apontar o caminho usando a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS.
-// Exemplo: no seu arquivo .env, coloque: GOOGLE_APPLICATION_CREDENTIALS="./chave-firebase.json"
+let app;
+let db;
 
 try {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault()
+  app = initializeApp({
+    credential: applicationDefault()
   });
+  db = getFirestore(app);
   console.log('🔥 Conectado ao Firebase com sucesso!');
 } catch (error) {
-  console.error('❌ Erro ao inicializar o Firebase Admin:', error);
+  console.error('❌ Erro ao inicializar o Firebase Admin. Verifique suas credenciais:', error.message);
+  // Se falhar na inicialização (ex: rodando local sem o .env), db não será inicializado
+  // Isso evita que o servidor crashe instantaneamente, permitindo ver os logs no Cloud Run.
 }
 
-const db = admin.firestore();
-
-module.exports = { admin, db };
+module.exports = { app, db };
