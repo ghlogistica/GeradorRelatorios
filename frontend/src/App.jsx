@@ -9,14 +9,25 @@ function App() {
   return (
     <Router>
       <div className="app-container">
-        <nav className="main-nav">
-          <div className="nav-brand">Zebra Print System</div>
-          <div className="nav-links">
-            <Link to="/admin" className="nav-item">Dashboard (TI)</Link>
-            <Link to="/conexoes" className="nav-item">Conexões ERP</Link>
-            <Link to="/" className="nav-item">Impressão Operacional</Link>
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <img src="https://buckettiimagens.s3.us-east-2.amazonaws.com/Imagens-s3/logo+GH+branco.png" alt="GH Logo" className="brand-logo" />
+            <h2 className="brand-name">GHRelatórios</h2>
           </div>
-        </nav>
+          
+          <nav className="sidebar-nav">
+            <Link to="/" className="nav-item">
+              <span className="nav-icon">🖨️</span> Impressão Operacional
+            </Link>
+            <div className="nav-group-title">Administração</div>
+            <Link to="/admin" className="nav-item">
+              <span className="nav-icon">📊</span> Dashboard de Templates
+            </Link>
+            <Link to="/conexoes" className="nav-item">
+              <span className="nav-icon">🔌</span> Conexões ERP
+            </Link>
+          </nav>
+        </aside>
         
         <main className="main-content">
           <Routes>

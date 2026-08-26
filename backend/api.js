@@ -8,10 +8,10 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 /**
- * POST /api/imprimir-etiqueta
+ * POST /api/gerar-documento (Antiga /imprimir-etiqueta)
  * Recebe o ID do template e os parâmetros preenchidos pelo usuário.
  */
-router.post('/imprimir-etiqueta', async (req, res) => {
+router.post('/gerar-documento', async (req, res) => {
     const { template_id, parametros } = req.body;
 
     if (!template_id || !parametros) {
@@ -19,6 +19,13 @@ router.post('/imprimir-etiqueta', async (req, res) => {
     }
 
     try {
+        // 0. Busca as configurações do Template (para devolver pro Front saber como renderizar)
+        const templateDoc = await db.collection('templates').doc(template_id).get();
+        if (!templateDoc.exists) {
+            return res.status(404).json({ error: 'Template não encontrado.' });
+        }
+        const templateInfo = templateDoc.data();
+
         // 1. Busca todas as queries atreladas a este template no Firestore
         const queriesSnapshot = await db.collection('templates_queries')
             .where('template_id', '==', template_id)
@@ -41,14 +48,6 @@ router.post('/imprimir-etiqueta', async (req, res) => {
 
             const configDb = conexaoDoc.data();
 
-            let querySqlTratada = query_sql;
-            
-            // Simulação de Mapeamento de Parâmetros
-            for (const [key, value] of Object.entries(parametros)) {
-                const regexParametro = new RegExp(`:${key}\\b`, 'g');
-                querySqlTratada = querySqlTratada.replace(regexParametro, `'${value}'`); 
-            }
-
             try {
                 if (configDb.tipo_banco === 'sqlserver') {
                     console.log(`[SQL Server] Conectando em ${configDb.host} para rodar ${nome_alias_tabela}`);
@@ -58,22 +57,28 @@ router.post('/imprimir-etiqueta', async (req, res) => {
                         password: configDb.senha,
                         database: configDb.database,
                         server: configDb.host,
-                        pool: {
-                            max: 10,
-                            min: 0,
-                            idleTimeoutMillis: 30000
-                        },
-                        options: {
-                            encrypt: false, // Pode precisar ser true no Azure
-                            trustServerCertificate: true 
-                        }
+                        pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+                        options: { encrypt: false, trustServerCertificate: true }
                     };
 
                     const pool = await mssql.connect(sqlConfig);
-                    const rs = await pool.request().query(querySqlTratada);
+                    const request = pool.request();
+
+                    // Prepara a query SQL substituindo os padrões pelo padrão nativo do SQL Server (@variavel)
+                    // e injeta os valores de forma segura prevenindo SQL Injection
+                    let querySqlTratada = query_sql;
+                    for (const [key, value] of Object.entries(parametros)) {
+                        // Substitui :variavel por @variavel no texto da query
+                        const regexParametro = new RegExp(`:${key}\\b`, 'g');
+                        querySqlTratada = querySqlTratada.replace(regexParametro, `@${key}`);
+                        
+                        // Injeta a variável na requisição do MSSQL
+                        request.input(key, value); 
+                    }
+
+                    const rs = await request.query(querySqlTratada);
                     dataAgregada[nome_alias_tabela] = rs.recordset;
                     
-                    // Fecha a conexão para não esgotar o pool no Cloud Run
                     await pool.close();
                 } else {
                      console.log(`Banco tipo ${configDb.tipo_banco} não suportado ainda.`);
@@ -114,24 +119,31 @@ router.post('/imprimir-etiqueta', async (req, res) => {
             return el;
         });
 
+        // Retorna não só os dados, mas as configurações de layout do documento para o Frontend
         return res.status(200).json({
             success: true,
+            documento: {
+                tipo: templateInfo.tipo_documento || 'etiqueta',
+                configuracoes: templateInfo.configuracoes_impressao || {}
+            },
             data: dataAgregada,
             elementos_finais: elementosMapeados
         });
 
     } catch (error) {
         console.error('Erro ao executar query do template:', error);
-        return res.status(500).json({ error: 'Erro interno ao processar a etiqueta.' });
+        return res.status(500).json({ error: 'Erro interno ao processar o documento.' });
     }
 });
 
+// Alias mantido por compatibilidade temporária
+router.post('/imprimir-etiqueta', (req, res) => res.redirect(307, '/api/gerar-documento'));
+
 /**
  * POST /api/parse-label-image
- * Mantido como mock por enquanto, pois o processamento de IA não usa BD aqui.
+ * Mantido como mock por enquanto.
  */
 router.post('/parse-label-image', upload.single('imagem'), async (req, res) => {
-    // ... [código de IA inalterado - apenas para manter a rota funcionando no frontend]
     return res.status(200).json({
         success: true,
         elementos: [ { id: 1, tipo_elemento: 'texto', posicao_x: 10, posicao_y: 10, fonte_dados: 'Estatico', valor_estatico: 'Mock IA' } ]
@@ -165,14 +177,16 @@ router.post('/templates', async (req, res) => {
         const payload = req.body;
         console.log(`[API] Solicitando salvamento do template: ${payload.nomeTemplate}`);
         
+        // Estrutura expandida suportando A4 e parâmetros dinâmicos
         const novoTemplate = {
             nome: payload.nomeTemplate,
             data_criacao: new Date().toISOString(),
+            tipo_documento: payload.tipo_documento || 'etiqueta',
+            configuracoes_impressao: payload.configuracoes_impressao || {},
+            parametros_esperados: payload.parametros_esperados || []
         };
         
-        // Salva na coleção templates e o Firestore gera um ID automático
         const docRef = await db.collection('templates').add(novoTemplate);
-        
         const templateCriado = { id: docRef.id, ...novoTemplate };
         
         console.log('[API] Modelo salvo com sucesso no Firestore!');

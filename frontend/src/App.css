@@ -2,50 +2,103 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', sans-serif;
-  background-color: #f1f3f5;
+  background-color: #f4f6f8; /* Fundo mais claro para contrastar com a sidebar escura */
+  color: #333;
 }
 
 .app-container {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
 }
 
-.main-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #1a1a2e;
-  padding: 15px 40px;
+/* Sidebar Styles */
+.sidebar {
+  width: 260px;
+  background-color: #09339e; /* Cor Primária GH */
   color: white;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.nav-brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.nav-links {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  flex-shrink: 0;
 }
 
-.nav-item {
-  color: #e9ecef;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+.sidebar-header {
+  padding: 30px 20px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.brand-logo {
+  max-width: 80%;
+  height: auto;
+  margin-bottom: 15px;
+}
+
+.brand-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   color: #fff;
 }
 
+.sidebar-nav {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.nav-group-title {
+  padding: 15px 20px 5px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+.nav-item {
+  color: #e0e5f2;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: #002972; /* Cor Secundária (Hover) GH */
+  color: #fff;
+  border-left-color: #ff6700; /* Cor Terciária (Destaques) GH */
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+}
+
+/* Main Content Styles */
 .main-content {
   flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+/* Scrollbar styling for a cleaner look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
 }
