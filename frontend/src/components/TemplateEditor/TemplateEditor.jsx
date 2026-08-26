@@ -288,15 +288,15 @@ export default function TemplateEditor() {
             <h2>✨ Inteligência Artificial</h2>
             <div className="ia-upload-box">
               <label className="btn-ia-upload">
-                🪄 Gerar Modelo a partir de Foto
+                🪄 Gerar Modelo com IA (PDF/Foto)
                 <input 
                   type="file" 
-                  accept="image/*" 
+                  accept="image/*,application/pdf" 
                   hidden 
                   onChange={handleUploadImagemIA} 
                 />
               </label>
-              <p className="ia-hint">Faça upload da foto de uma etiqueta e a IA desenhará o layout automaticamente para você.</p>
+              <p className="ia-hint">Faça upload de um PDF ou foto e a IA desenhará o layout automaticamente para você.</p>
             </div>
           </section>
 

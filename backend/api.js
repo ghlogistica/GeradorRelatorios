@@ -139,15 +139,84 @@ router.post('/gerar-documento', async (req, res) => {
 // Alias mantido por compatibilidade temporária
 router.post('/imprimir-etiqueta', (req, res) => res.redirect(307, '/api/gerar-documento'));
 
+const { GoogleGenAI } = require('@google/genai');
+
 /**
  * POST /api/parse-label-image
- * Mantido como mock por enquanto.
+ * Recebe uma imagem ou PDF, envia para o Gemini 2.5 Pro para análise de layout
+ * e retorna os elementos visuais mapeados para o Canvas.
  */
 router.post('/parse-label-image', upload.single('imagem'), async (req, res) => {
-    return res.status(200).json({
-        success: true,
-        elementos: [ { id: 1, tipo_elemento: 'texto', posicao_x: 10, posicao_y: 10, fonte_dados: 'Estatico', valor_estatico: 'Mock IA' } ]
-    });
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'Nenhum arquivo enviado.' });
+        }
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ success: false, error: 'Chave de API do Gemini não configurada no servidor (GEMINI_API_KEY).' });
+        }
+
+        const ai = new GoogleGenAI({ apiKey: apiKey });
+
+        const mimeType = req.file.mimetype; // ex: application/pdf ou image/jpeg
+        const fileBase64 = req.file.buffer.toString('base64');
+
+        const prompt = `Você é um engenheiro de software especialista em extração de layout para sistemas geradores de relatórios e etiquetas.
+O usuário fez o upload de um arquivo (imagem ou PDF).
+Sua tarefa é analisar o visual do arquivo e mapear onde cada bloco de texto ou elemento visual (como código de barras) está localizado.
+
+Importante: O "Canvas" do nosso sistema considera:
+- A posição X e Y é dada em pixels (assuma que 1 cm no papel real = ~38 pixels na tela).
+- Assuma que o documento tem aproximadamente 21x29.7cm (A4) ou é uma etiqueta menor. Baseie-se no tamanho relativo para calcular X e Y absolutos.
+
+Sua resposta DEVE ser EXCLUSIVAMENTE um objeto JSON válido, contendo um array de objetos chamado "elementos", seguindo EXATAMENTE este schema para cada elemento:
+{
+  "id": número inteiro único aleatório,
+  "tipo_elemento": "texto" (para texto) ou "codigo_barras" (se identificar código de barras),
+  "posicao_x": inteiro (pixel estimado na tela),
+  "posicao_y": inteiro (pixel estimado na tela),
+  "fonte": "Arial",
+  "tamanho_fonte": inteiro (tamanho estimado em pixels, ex: 14 para normal, 24 para título),
+  "fonte_dados": "Estatico",
+  "coluna_banco": "",
+  "valor_estatico": "O texto que você leu",
+  "is_opcional": false,
+  "regra_condicional": ""
+}
+
+Tente diferenciar textos fixos (como cabeçalhos de tabela: "Placa Cavalo:") de dados preenchidos ("IXS9B03").
+Se for um dado que varia por relatório (ex: o nome de uma pessoa, uma placa, uma data), você ainda o mapeará como "Estatico", mas no "valor_estatico" coloque "[Campo Dinâmico: Valor Lido]".
+Tente mapear os principais blocos do documento.
+Retorne APENAS o JSON, sem markdown ou formatação de código (\`\`\`).`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: [
+                prompt,
+                {
+                    inlineData: {
+                        data: fileBase64,
+                        mimeType: mimeType
+                    }
+                }
+            ],
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+
+        const jsonString = response.text;
+        const data = JSON.parse(jsonString);
+
+        return res.status(200).json({
+            success: true,
+            elementos: data.elementos
+        });
+    } catch (error) {
+        console.error('Erro na IA:', error);
+        return res.status(500).json({ success: false, error: 'Erro ao processar documento com a IA.' });
+    }
 });
 
 /**
