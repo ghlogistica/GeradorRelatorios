@@ -179,6 +179,9 @@ Schema de cada elemento:
   "y_normalizado": inteiro de 0 a 1000 (posição vertical do topo/meio),
   "largura_normalizada": inteiro de 0 a 1000 (obrigatório para caixas, linhas e imagens; opcional para texto),
   "altura_normalizada": inteiro de 0 a 1000 (obrigatório para caixas, imagens e linhas verticais),
+  "cor_fundo": "string hexadecimal (ex: #f2f2f2 para caixas cinzas, ou null se transparente)",
+  "cor_borda": "string hexadecimal (ex: #000000 para bordas escuras, ou null)",
+  "espessura_borda": inteiro (ex: 1 para borda fina, 2 para grossa, 0 sem borda),
   "fonte": "Arial",
   "tamanho_fonte_normalizado": inteiro (proporção do tamanho da fonte de 0 a 1000. Ex: 10 para normal),
   "fonte_dados": "Estatico",
@@ -190,7 +193,7 @@ Schema de cada elemento:
 
 Regras:
 1. Agrupe palavras da mesma frase em um único elemento. Não separe cada palavra.
-2. Identifique tabelas e bordas criando elementos do tipo "caixa" ou "linha" e definindo corretamente suas posições, larguras e alturas.
+2. Identifique tabelas e bordas criando elementos do tipo "caixa" ou "linha". Esforce-se para identificar a cor hexadecimal aproximada do fundo (ex: cabeçalhos cinzas) e a espessura da linha.
 3. Identifique logomarcas ou brasões criando elementos do tipo "imagem". No "valor_estatico", coloque uma descrição curta (ex: "Logo GH").
 4. Para campos preenchidos, coloque "valor_estatico" como "[Campo Dinâmico: valor que você leu]".
 5. Retorne APENAS JSON puro. Sem formatação markdown (\`\`\`json).`;
@@ -231,7 +234,10 @@ Regras:
                 posicao_y: pxY,
                 largura: pxLargura,
                 altura: pxAltura,
-                tamanho_fonte: tFonte > 30 ? 30 : tFonte
+                tamanho_fonte: tFonte > 30 ? 30 : tFonte,
+                cor_fundo: el.cor_fundo || null,
+                cor_borda: el.cor_borda || null,
+                espessura_borda: el.espessura_borda !== undefined ? el.espessura_borda : null
             };
         });
 

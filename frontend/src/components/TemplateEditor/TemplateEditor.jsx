@@ -250,6 +250,13 @@ export default function TemplateEditor() {
                 onChange={(e) => setNomeTemplate(e.target.value)}
               />
             </div>
+            {configFisica.imagem_fundo && (
+              <div className="form-group">
+                <button className="btn-secondary" style={{width: '100%'}} onClick={() => setConfigFisica({...configFisica, imagem_fundo: null})}>
+                  🗑️ Remover Imagem de Fundo (PDF)
+                </button>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Tipo de Documento</label>
@@ -443,11 +450,12 @@ export default function TemplateEditor() {
                     height: el.altura ? `${el.altura}px` : 'auto',
                     fontFamily: el.fonte,
                     fontSize: `${el.tamanho_fonte}px`,
-                    backgroundColor: el.cor_fundo || 'rgba(255, 255, 255, 0.95)',
-                    padding: '2px',
-                    border: '1px dotted rgba(0,0,0,0.3)',
+                    backgroundColor: el.tipo_elemento === 'texto' ? (el.cor_fundo || 'rgba(255, 255, 255, 0.95)') : 'transparent',
+                    padding: el.tipo_elemento === 'texto' ? '2px' : '0px',
+                    outline: elementoSelecionado === el.id ? '1px dashed #0d6efd' : 'none',
                     cursor: draggingId === el.id ? 'grabbing' : 'grab',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    zIndex: elementoSelecionado === el.id ? 100 : 10
                   }}
                 >
                   {el.tipo_elemento === 'codigo_barras' && '||||||||||||||||'}

@@ -246,15 +246,14 @@
   
   .canvas-wrapper {
     flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    padding: 20px;
     overflow: auto;
   }
   
   /* A etiqueta física propriamente dita (ex: 10cm x 15cm)
      1cm aprox = 37.8px. 10x15 = 378px x 567px (usaremos um scale aproximado) */
   .etiqueta-canvas {
+    margin: 0 auto;
     width: 378px;
     height: 567px;
     background-color: #ffffff;
