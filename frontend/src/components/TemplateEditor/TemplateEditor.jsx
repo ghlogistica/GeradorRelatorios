@@ -8,7 +8,8 @@ export default function TemplateEditor() {
   // 1. Configuração Geral
   const [nomeTemplate, setNomeTemplate] = useState('');
   const [tipoDocumento, setTipoDocumento] = useState('etiqueta');
-  const [queries, setQueries] = useState([{ id: Date.now(), conexao_id: '1', nome_alias_tabela: 'QueryPrincipal', query_sql: '' }]);
+  const [queries, setQueries] = useState([{ id: Date.now(), conexao_id: '', nome_alias_tabela: 'QueryPrincipal', query_sql: '' }]);
+  const [conexoes, setConexoes] = useState([]);
   const [configFisica, setConfigFisica] = useState({
     largura: 10,
     altura: 10,
@@ -319,8 +320,12 @@ export default function TemplateEditor() {
                     value={q.conexao_id}
                     onChange={(e) => setQueries(queries.map(query => query.id === q.id ? { ...query, conexao_id: e.target.value } : query))}
                   >
-                    <option value="1">ERP SQL Server</option>
-                    <option value="2">Postgres Local</option>
+                    <option value="" disabled>Selecione uma Conexão</option>
+                    {conexoes.map(conn => (
+                      <option key={conn.id} value={conn.id}>
+                        {conn.nome_conexao} ({conn.tipo_banco})
+                      </option>
+                    ))}
                   </select>
                   <textarea 
                     className="code-editor" 
@@ -332,7 +337,7 @@ export default function TemplateEditor() {
               ))}
               <button 
                 className="btn-secondary add-query-btn" 
-                onClick={() => setQueries([...queries, { id: Date.now(), conexao_id: '1', nome_alias_tabela: '', query_sql: '' }])}
+                onClick={() => setQueries([...queries, { id: Date.now(), conexao_id: '', nome_alias_tabela: '', query_sql: '' }])}
               >
                 + Adicionar Query
               </button>

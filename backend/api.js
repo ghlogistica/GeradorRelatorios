@@ -1,5 +1,34 @@
 const express = require('express');
 const mssql = require('mssql');
+const crypto = require('crypto');
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'chavede32caracterespadrao1234567'; // 32 chars
+const IV_LENGTH = 16;
+
+function encrypt(text) {
+    if (!text) return text;
+    let iv = crypto.randomBytes(IV_LENGTH);
+    let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text) {
+    if (!text || !text.includes(':')) return text;
+    try {
+        let textParts = text.split(':');
+        let iv = Buffer.from(textParts.shift(), 'hex');
+        let encryptedText = Buffer.from(textParts.join(':'), 'hex');
+        let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+        let decrypted = decipher.update(encryptedText);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString();
+    } catch (e) {
+        console.error('Error decrypting password:', e);
+        return text;
+    }
+}
 const multer = require('multer');
 const { db } = require('./firebase-config');
 const zebraPrinterService = require('./ZebraPrinterService');
@@ -54,7 +83,7 @@ router.post('/gerar-documento', async (req, res) => {
                     
                     const sqlConfig = {
                         user: configDb.usuario,
-                        password: configDb.senha,
+                        password: decrypt(configDb.senha),
                         database: configDb.database,
                         server: configDb.host,
                         pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
@@ -295,6 +324,71 @@ router.post('/templates', async (req, res) => {
     } catch (error) {
         console.error('Erro ao salvar template:', error);
         return res.status(500).json({ error: 'Erro interno ao salvar template no Firebase.' });
+    }
+});
+
+// --- ROTAS PARA CONEXÕES DE BANCO DE DADOS (ERPs) ---
+
+// Listar conexões (GET) - Mascarando a senha
+router.get('/conexoes_banco', async (req, res) => {
+    try {
+        const snapshot = await db.collection('conexoes_banco').get();
+        const conexoes = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                senha: data.senha ? '********' : '' // Máscara de segurança
+            };
+        });
+        res.json(conexoes);
+    } catch (error) {
+        console.error('Erro ao buscar conexões:', error);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+// Criar/Atualizar conexão (POST) - Criptografando a senha
+router.post('/conexoes_banco', async (req, res) => {
+    try {
+        const { id, nome_conexao, tipo_banco, host, porta, usuario, senha, database } = req.body;
+        
+        const payload = {
+            nome_conexao,
+            tipo_banco,
+            host,
+            porta: Number(porta),
+            usuario,
+            database
+        };
+
+        if (id) {
+            // Se for atualização e a senha NÃO for '********', nós a atualizamos (criptografando).
+            if (senha && senha !== '********') {
+                payload.senha = encrypt(senha);
+            }
+            await db.collection('conexoes_banco').doc(id).update(payload);
+            res.json({ success: true, id });
+        } else {
+            // Nova conexão
+            payload.senha = encrypt(senha);
+            const ref = await db.collection('conexoes_banco').add(payload);
+            res.json({ success: true, id: ref.id });
+        }
+    } catch (error) {
+        console.error('Erro ao salvar conexão:', error);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+// Deletar conexão (DELETE)
+router.delete('/conexoes_banco/:id', async (req, res) => {
+    try {
+        await db.collection('conexoes_banco').doc(req.params.id).delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao excluir conexão:', error);
+        res.status(500).json({ error: 'Erro interno' });
     }
 });
 

@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors()); // Allow frontend to call the API
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api', apiRoutes);
