@@ -9,14 +9,24 @@ let db;
 try {
   const serviceAccountPath = path.join(__dirname, 'geradorrelatorios-c53bb-firebase-adminsdk-fbsvc-5f6329d11c.json');
   
-  // Ignora o JSON local se estiver rodando no Cloud Run (variável K_SERVICE existe)
-  if (fs.existsSync(serviceAccountPath) && !process.env.K_SERVICE) {
+  // 1. Tenta carregar a chave por Variável de Ambiente (Recomendado para Cloud Run)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    console.log('☁️ Usando chave de serviço Firebase via Variável de Ambiente...');
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    app = initializeApp({
+      credential: cert(serviceAccount)
+    });
+  } 
+  // 2. Tenta carregar do arquivo local (Para desenvolvimento na sua máquina)
+  else if (fs.existsSync(serviceAccountPath)) {
     console.log('📄 Usando chave de serviço JSON local para o Firebase...');
     const serviceAccount = require(serviceAccountPath);
     app = initializeApp({
       credential: cert(serviceAccount)
     });
-  } else {
+  } 
+  // 3. Fallback para as credenciais padrão da máquina
+  else {
     console.log('☁️ Usando credenciais padrão do ambiente (Cloud Run) para o Firebase...');
     app = initializeApp();
   }
