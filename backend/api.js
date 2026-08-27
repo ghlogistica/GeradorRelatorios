@@ -174,11 +174,13 @@ Sua resposta DEVE ser EXCLUSIVAMENTE um objeto JSON válido, contendo um array "
 Schema de cada elemento:
 {
   "id": número inteiro único aleatório,
-  "tipo_elemento": "texto" (ou "codigo_barras"),
-  "x_normalizado": inteiro de 0 a 1000 (posição horizontal do início do texto),
-  "y_normalizado": inteiro de 0 a 1000 (posição vertical do meio do texto),
+  "tipo_elemento": "texto", "codigo_barras", "caixa" (tabelas/bordas/fundos coloridos), "linha" (divisórias), ou "imagem" (logomarcas),
+  "x_normalizado": inteiro de 0 a 1000 (posição horizontal do início),
+  "y_normalizado": inteiro de 0 a 1000 (posição vertical do topo/meio),
+  "largura_normalizada": inteiro de 0 a 1000 (obrigatório para caixas, linhas e imagens; opcional para texto),
+  "altura_normalizada": inteiro de 0 a 1000 (obrigatório para caixas, imagens e linhas verticais),
   "fonte": "Arial",
-  "tamanho_fonte_normalizado": inteiro (proporção do tamanho da fonte de 0 a 1000. Ex: 10 para normal, 20 para título grande),
+  "tamanho_fonte_normalizado": inteiro (proporção do tamanho da fonte de 0 a 1000. Ex: 10 para normal),
   "fonte_dados": "Estatico",
   "coluna_banco": "",
   "valor_estatico": "Texto lido do documento",
@@ -188,9 +190,10 @@ Schema de cada elemento:
 
 Regras:
 1. Agrupe palavras da mesma frase em um único elemento. Não separe cada palavra.
-2. Identifique corretamente a coluna e a linha para que textos na mesma linha tenham o mesmo y_normalizado.
-3. Para campos preenchidos a caneta ou sistema (ex: nome de motorista, data), coloque "valor_estatico" como "[Campo Dinâmico: valor que você leu]". Para cabeçalhos ("Nome:", "Data:"), coloque o texto normal.
-4. Retorne APENAS JSON puro. Sem formatação markdown (\`\`\`json).`;
+2. Identifique tabelas e bordas criando elementos do tipo "caixa" ou "linha" e definindo corretamente suas posições, larguras e alturas.
+3. Identifique logomarcas ou brasões criando elementos do tipo "imagem". No "valor_estatico", coloque uma descrição curta (ex: "Logo GH").
+4. Para campos preenchidos, coloque "valor_estatico" como "[Campo Dinâmico: valor que você leu]".
+5. Retorne APENAS JSON puro. Sem formatação markdown (\`\`\`json).`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3.1-pro-preview',
@@ -218,13 +221,17 @@ Regras:
         const elementosTratados = (data.elementos || []).map(el => {
             const pxX = Math.round(((el.x_normalizado || 0) / 1000) * LARGURA_A4_PX);
             const pxY = Math.round(((el.y_normalizado || 0) / 1000) * ALTURA_A4_PX);
+            const pxLargura = el.largura_normalizada ? Math.round((el.largura_normalizada / 1000) * LARGURA_A4_PX) : null;
+            const pxAltura = el.altura_normalizada ? Math.round((el.altura_normalizada / 1000) * ALTURA_A4_PX) : null;
             const tFonte = Math.max(10, Math.round(((el.tamanho_fonte_normalizado || 15) / 1000) * ALTURA_A4_PX));
             
             return {
                 ...el,
                 posicao_x: pxX,
                 posicao_y: pxY,
-                tamanho_fonte: tFonte > 30 ? 30 : tFonte // Limita fonte pra não ficar gigantesco no canvas
+                largura: pxLargura,
+                altura: pxAltura,
+                tamanho_fonte: tFonte > 30 ? 30 : tFonte
             };
         });
 

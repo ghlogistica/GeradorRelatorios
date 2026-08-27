@@ -23,6 +23,15 @@ export default function TemplateEditor() {
   // 3. Canvas Drag-and-Drop
   const [elementosCanvas, setElementosCanvas] = useState([]);
   const [elementoSelecionado, setElementoSelecionado] = useState(null);
+  
+  // Dragging states
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  
+  // Resizing states
+  const [resizingId, setResizingId] = useState(null);
+  const [resizeStartMouse, setResizeStartMouse] = useState({ x: 0, y: 0 });
+  const [resizeStartSize, setResizeStartSize] = useState({ w: 0, h: 0 });
 
   // 4. IA Generation
   const [loadingIA, setLoadingIA] = useState(false);
@@ -72,6 +81,8 @@ export default function TemplateEditor() {
       tipo_elemento: tipo,
       posicao_x: boundedX,
       posicao_y: boundedY,
+      largura: tipo === 'linha' ? 200 : (tipo === 'caixa' || tipo === 'imagem' ? 100 : null),
+      altura: tipo === 'linha' ? 2 : (tipo === 'caixa' || tipo === 'imagem' ? 50 : null),
       fonte: 'Arial',
       tamanho_fonte: 14,
       fonte_dados: 'Estatico',
@@ -87,6 +98,43 @@ export default function TemplateEditor() {
 
   const handleDragOverCanvas = (e) => {
     e.preventDefault(); // Necessário para permitir o drop
+  };
+
+  const handleElementMouseDown = (e, id) => {
+    e.stopPropagation();
+    setElementoSelecionado(id);
+    setDraggingId(id);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    if (draggingId && !resizingId) {
+      const canvasRect = e.currentTarget.getBoundingClientRect();
+      const newX = e.clientX - canvasRect.left - dragOffset.x;
+      const newY = e.clientY - canvasRect.top - dragOffset.y;
+      setElementosCanvas(elementosCanvas.map(el => 
+        el.id === draggingId ? { ...el, posicao_x: newX, posicao_y: newY } : el
+      ));
+    } else if (resizingId) {
+      const dx = e.clientX - resizeStartMouse.x;
+      const dy = e.clientY - resizeStartMouse.y;
+      setElementosCanvas(elementosCanvas.map(el => 
+        el.id === resizingId ? { 
+          ...el, 
+          largura: Math.max(10, resizeStartSize.w + dx), 
+          altura: Math.max(10, resizeStartSize.h + dy) 
+        } : el
+      ));
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    setDraggingId(null);
+    setResizingId(null);
   };
 
   // --- Handlers para o Painel Lateral (Propriedades) ---
@@ -329,27 +377,12 @@ export default function TemplateEditor() {
           <section className="tools-section">
             <h2>Ferramentas (Arraste)</h2>
             <div className="tools-grid">
-              <div 
-                className="tool-item draggable" 
-                draggable 
-                onDragStart={(e) => handleDragStartTool(e, 'texto')}
-              >
-                T Texto
-              </div>
-              <div 
-                className="tool-item draggable" 
-                draggable 
-                onDragStart={(e) => handleDragStartTool(e, 'codigo_barras')}
-              >
-                |||| Barcode
-              </div>
-              <div 
-                className="tool-item draggable" 
-                draggable 
-                onDragStart={(e) => handleDragStartTool(e, 'qrcode')}
-              >
-                [] QR Code
-              </div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'texto')}>T Texto</div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'caixa')}>⬜ Caixa/Borda</div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'linha')}>➖ Linha</div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'imagem')}>🖼️ Imagem</div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'codigo_barras')}>|||| Barcode</div>
+              <div className="tool-item draggable" draggable onDragStart={(e) => handleDragStartTool(e, 'qrcode')}>[] QR Code</div>
             </div>
           </section>
         </aside>
@@ -362,6 +395,9 @@ export default function TemplateEditor() {
               className="etiqueta-canvas"
               onDrop={handleDropCanvas}
               onDragOver={handleDragOverCanvas}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
               style={{
                 width: `${(configFisica.orientacao === 'retrato' ? configFisica.largura : configFisica.altura) * 37.8}px`,
                 height: `${(configFisica.orientacao === 'retrato' ? configFisica.altura : configFisica.largura) * 37.8}px`,
@@ -395,23 +431,56 @@ export default function TemplateEditor() {
                 <div 
                   key={el.id}
                   className={`canvas-element ${elementoSelecionado === el.id ? 'selected' : ''}`}
-                  style={{ 
-                    left: `${el.posicao_x}px`, 
-                    top: `${el.posicao_y}px`,
-                    fontFamily: el.fonte,
-                    fontSize: `${el.tamanho_fonte}px`,
-                    backgroundColor: el.cor_fundo || 'rgba(255, 255, 255, 0.95)',
-                    padding: '2px',
-                    border: '1px dotted rgba(0,0,0,0.1)'
-                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setElementoSelecionado(el.id);
                   }}
+                  onMouseDown={(e) => handleElementMouseDown(e, el.id)}
+                  style={{ 
+                    left: `${el.posicao_x}px`, 
+                    top: `${el.posicao_y}px`,
+                    width: el.largura ? `${el.largura}px` : 'auto',
+                    height: el.altura ? `${el.altura}px` : 'auto',
+                    fontFamily: el.fonte,
+                    fontSize: `${el.tamanho_fonte}px`,
+                    backgroundColor: el.cor_fundo || 'rgba(255, 255, 255, 0.95)',
+                    padding: '2px',
+                    border: '1px dotted rgba(0,0,0,0.3)',
+                    cursor: draggingId === el.id ? 'grabbing' : 'grab',
+                    userSelect: 'none'
+                  }}
                 >
-                  {el.tipo_elemento === 'codigo_barras' ? '||||||||||||||||' : 
-                   el.tipo_elemento === 'qrcode' ? '[ QR ]' : 
-                   (el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.fonte_dados}.${el.coluna_banco}]`)}
+                  {el.tipo_elemento === 'codigo_barras' && '||||||||||||||||'}
+                  {el.tipo_elemento === 'qrcode' && '[ QR ]'}
+                  {el.tipo_elemento === 'texto' && (el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.fonte_dados}.${el.coluna_banco}]`)}
+                  {el.tipo_elemento === 'caixa' && <div style={{width:'100%', height:'100%', border: `${el.espessura_borda || 1}px solid ${el.cor_borda || '#000'}`, backgroundColor: el.cor_fundo || 'transparent'}}></div>}
+                  {el.tipo_elemento === 'linha' && <div style={{width:'100%', height:'100%', backgroundColor: el.cor_borda || '#000'}}></div>}
+                  {el.tipo_elemento === 'imagem' && (el.url_imagem ? <img src={el.url_imagem} style={{width:'100%', height:'100%', objectFit:'contain'}} alt="Elemento"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#eee', border:'1px dashed #ccc'}}>[ IMAGEM ]</div>)}
+
+                  {/* Resize Handle */}
+                  {elementoSelecionado === el.id && (
+                    <div 
+                      className="resize-handle"
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        setResizingId(el.id);
+                        setElementoSelecionado(el.id);
+                        setResizeStartMouse({ x: e.clientX, y: e.clientY });
+                        // Se nao tem largura definida ainda (auto), seta um padrao inicial
+                        setResizeStartSize({ w: el.largura || 100, h: el.altura || 30 });
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '-5px',
+                        bottom: '-5px',
+                        width: '10px',
+                        height: '10px',
+                        backgroundColor: '#09339e',
+                        cursor: 'se-resize',
+                        borderRadius: '50%'
+                      }}
+                    ></div>
+                  )}
                 </div>
               ))}
             </div>
@@ -451,6 +520,55 @@ export default function TemplateEditor() {
                   onChange={(e) => atualizarElementoCanvas('tamanho_fonte', parseInt(e.target.value))}
                 />
               </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Largura</label>
+                  <input type="number" value={elementoAtivo.largura || ''} onChange={(e) => atualizarElementoCanvas('largura', parseInt(e.target.value) || null)} />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Altura</label>
+                  <input type="number" value={elementoAtivo.altura || ''} onChange={(e) => atualizarElementoCanvas('altura', parseInt(e.target.value) || null)} />
+                </div>
+              </div>
+
+              {(elementoAtivo.tipo_elemento === 'caixa' || elementoAtivo.tipo_elemento === 'linha' || elementoAtivo.tipo_elemento === 'texto') && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Fundo</label>
+                    <input type="color" style={{padding:0, height:'30px', width:'100%'}} value={elementoAtivo.cor_fundo || '#ffffff'} onChange={(e) => atualizarElementoCanvas('cor_fundo', e.target.value)} />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Cor Borda</label>
+                    <input type="color" style={{padding:0, height:'30px', width:'100%'}} value={elementoAtivo.cor_borda || '#000000'} onChange={(e) => atualizarElementoCanvas('cor_borda', e.target.value)} />
+                  </div>
+                  {elementoAtivo.tipo_elemento === 'caixa' && (
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Espessura</label>
+                      <input type="number" value={elementoAtivo.espessura_borda || 1} onChange={(e) => atualizarElementoCanvas('espessura_borda', parseInt(e.target.value) || 0)} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {elementoAtivo.tipo_elemento === 'imagem' && (
+                <div className="form-group">
+                  <label>Upload da Imagem</label>
+                  <input type="file" accept="image/*" onChange={async (e) => {
+                     const file = e.target.files[0];
+                     if(file) {
+                        const base64 = await new Promise(resolve => {
+                          const reader = new FileReader();
+                          reader.onload = () => resolve(reader.result);
+                          reader.readAsDataURL(file);
+                        });
+                        atualizarElementoCanvas('url_imagem', base64);
+                     }
+                  }} />
+                </div>
+              )}
+
+              <hr style={{ margin: '10px 0', border: 'none', borderTop: '1px solid #eee' }} />
 
               <div className="form-group">
                 <label>Fonte de Dados</label>
