@@ -191,7 +191,7 @@ Tente mapear os principais blocos do documento.
 Retorne APENAS o JSON, sem markdown ou formatação de código (\`\`\`).`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-3.1-pro-preview',
             contents: [
                 prompt,
                 {

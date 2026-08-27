@@ -171,7 +171,7 @@ export default function TemplateEditor() {
               <label>Nome do Template</label>
               <input 
                 type="text" 
-                placeholder="Ex: Etiqueta de Expedição" 
+                placeholder={tipoDocumento === 'relatorio_a4' ? 'Ex: Ordem de Carregamento' : 'Ex: Etiqueta de Expedição'}
                 value={nomeTemplate}
                 onChange={(e) => setNomeTemplate(e.target.value)}
               />
@@ -358,7 +358,7 @@ export default function TemplateEditor() {
               {loadingIA && (
                 <div className="ia-loading-overlay">
                   <div className="spinner"></div>
-                  <p>A IA está analisando sua etiqueta...</p>
+                  <p>A IA está analisando {tipoDocumento === 'relatorio_a4' ? 'seu relatório' : 'sua etiqueta'}...</p>
                 </div>
               )}
               {elementosCanvas.map(el => (
