@@ -350,7 +350,7 @@ router.get('/conexoes_banco', async (req, res) => {
         res.json(conexoes);
     } catch (error) {
         console.error('Erro ao buscar conexões:', error);
-        res.status(500).json({ error: 'Erro interno' });
+        res.status(500).json({ error: 'Erro interno: ' + error.message, stack: error.stack });
     }
 });
 
@@ -383,7 +383,7 @@ router.post('/conexoes_banco', async (req, res) => {
         }
     } catch (error) {
         console.error('Erro ao salvar conexão:', error);
-        res.status(500).json({ error: 'Erro interno' });
+        res.status(500).json({ error: 'Erro interno ao salvar: ' + error.message, stack: error.stack, type: error.name });
     }
 });
 
