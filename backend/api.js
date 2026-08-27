@@ -319,7 +319,8 @@ router.post('/templates', async (req, res) => {
             data_criacao: new Date().toISOString(),
             tipo_documento: payload.tipo_documento || 'etiqueta',
             configuracoes_impressao: payload.configuracoes_impressao || {},
-            parametros_esperados: payload.parametros_esperados || []
+            parametros_esperados: payload.parametros_esperados || [],
+            categoria_id: payload.categoria_id || null
         };
         
         const docRef = await db.collection('templates').add(novoTemplate);
@@ -330,6 +331,54 @@ router.post('/templates', async (req, res) => {
     } catch (error) {
         console.error('Erro ao salvar template:', error);
         return res.status(500).json({ error: 'Erro interno ao salvar template no Firebase.' });
+    }
+});
+
+// --- ROTAS PARA CATEGORIAS ---
+
+// Listar Categorias (GET)
+router.get('/categorias', async (req, res) => {
+    try {
+        const snapshot = await db.collection('categorias').get();
+        const categorias = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        res.status(200).json(categorias);
+    } catch (error) {
+        console.error('Erro ao buscar categorias:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar categorias.' });
+    }
+});
+
+// Criar/Atualizar Categoria (POST)
+router.post('/categorias', async (req, res) => {
+    try {
+        const { id, nome, descricao } = req.body;
+        const payload = { nome, descricao, data_atualizacao: new Date().toISOString() };
+
+        if (id) {
+            await db.collection('categorias').doc(id).update(payload);
+            res.json({ success: true, id });
+        } else {
+            payload.data_criacao = new Date().toISOString();
+            const ref = await db.collection('categorias').add(payload);
+            res.json({ success: true, id: ref.id });
+        }
+    } catch (error) {
+        console.error('Erro ao salvar categoria:', error);
+        res.status(500).json({ error: 'Erro interno ao salvar categoria.' });
+    }
+});
+
+// Deletar Categoria (DELETE)
+router.delete('/categorias/:id', async (req, res) => {
+    try {
+        await db.collection('categorias').doc(req.params.id).delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao excluir categoria:', error);
+        res.status(500).json({ error: 'Erro interno ao excluir categoria.' });
     }
 });
 

@@ -3,6 +3,8 @@ import './PrintOperacional.css';
 
 export default function PrintOperacional() {
   const [templates, setTemplates] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState('');
   const [templateSelecionado, setTemplateSelecionado] = useState('');
   const [camposDinamicos, setCamposDinamicos] = useState([]);
   const [formData, setFormData] = useState({});
@@ -10,15 +12,26 @@ export default function PrintOperacional() {
   
   const [resultadoPreview, setResultadoPreview] = useState(null);
 
-  // 1. Carrega os templates disponíveis ao abrir a tela
+  // 1. Carrega os templates e categorias disponíveis ao abrir a tela
   useEffect(() => {
-    // Exemplo: fetch('/api/templates')
-    // Simulando retorno do banco:
-    setTemplates([
-      { id: 1, nome: 'Etiqueta de Expedição' },
-      { id: 2, nome: 'Etiqueta de Qualidade (Q.A)' }
-    ]);
+    const fetchData = async () => {
+      try {
+        const [resTemplates, resCategorias] = await Promise.all([
+          fetch('/api/templates'),
+          fetch('/api/categorias')
+        ]);
+        if (resTemplates.ok) setTemplates(await resTemplates.json());
+        if (resCategorias.ok) setCategorias(await resCategorias.json());
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      }
+    };
+    fetchData();
   }, []);
+
+  const templatesFiltrados = categoriaSelecionada 
+    ? templates.filter(t => t.categoria_id === categoriaSelecionada)
+    : templates;
 
   // 2. Ao selecionar um template, busca os campos_input vinculados a ele
   useEffect(() => {
@@ -122,6 +135,32 @@ export default function PrintOperacional() {
 
       <div className="operacional-card">
         <form onSubmit={handleImprimir}>
+          
+          <div className="form-group-large" style={{ marginBottom: '20px' }}>
+            <label>Filtrar por Categoria</label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+              <button 
+                type="button"
+                className={`btn-secondary ${categoriaSelecionada === '' ? 'active-filter' : ''}`}
+                style={{ backgroundColor: categoriaSelecionada === '' ? '#0f172a' : '', color: categoriaSelecionada === '' ? '#fff' : '' }}
+                onClick={() => { setCategoriaSelecionada(''); setTemplateSelecionado(''); }}
+              >
+                Todas
+              </button>
+              {categorias.map(cat => (
+                <button 
+                  key={cat.id} 
+                  type="button"
+                  className={`btn-secondary ${categoriaSelecionada === cat.id ? 'active-filter' : ''}`}
+                  style={{ backgroundColor: categoriaSelecionada === cat.id ? '#0f172a' : '', color: categoriaSelecionada === cat.id ? '#fff' : '' }}
+                  onClick={() => { setCategoriaSelecionada(cat.id); setTemplateSelecionado(''); }}
+                >
+                  {cat.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="form-group-large">
             <label>Modelo de Etiqueta</label>
             <select 
@@ -131,7 +170,7 @@ export default function PrintOperacional() {
               required
             >
               <option value="">-- SELECIONE --</option>
-              {templates.map(t => (
+              {templatesFiltrados.map(t => (
                 <option key={t.id} value={t.id}>{t.nome}</option>
               ))}
             </select>

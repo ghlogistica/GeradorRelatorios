@@ -54,7 +54,6 @@ export default function TemplateDashboard() {
       <table className="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Nome do Modelo</th>
             <th>Data de Criação</th>
             <th>Ações</th>
@@ -63,7 +62,6 @@ export default function TemplateDashboard() {
         <tbody>
           {templates.map(tpl => (
             <tr key={tpl.id}>
-              <td>{tpl.id}</td>
               <td>{tpl.nome}</td>
               <td>{new Date(tpl.data_criacao).toLocaleDateString()}</td>
               <td>

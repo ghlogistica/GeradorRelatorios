@@ -4,6 +4,7 @@ import TemplateEditor from './components/TemplateEditor/TemplateEditor'
 import PrintOperacional from './components/PrintOperacional/PrintOperacional'
 import TemplateDashboard from './components/TemplateDashboard/TemplateDashboard'
 import ConexoesAdmin from './components/ConexoesAdmin/ConexoesAdmin'
+import CategoriasAdmin from './components/CategoriasAdmin/CategoriasAdmin'
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -30,6 +31,8 @@ function App() {
             </Link>
             <Link to="/conexoes" className="nav-item" title="Conexões ERP">
               <span className="nav-icon">🔌</span> {isSidebarOpen && <span className="nav-text">Conexões ERP</span>}
+            <Link to="/categorias" className="nav-item" title="Categorias">
+              <span className="nav-icon">📂</span> {isSidebarOpen && <span className="nav-text">Categorias</span>}
             </Link>
           </nav>
         </aside>
@@ -41,6 +44,7 @@ function App() {
             <Route path="/editor" element={<TemplateEditor />} />
             <Route path="/editor/:id" element={<TemplateEditor />} />
             <Route path="/conexoes" element={<ConexoesAdmin />} />
+            <Route path="/categorias" element={<CategoriasAdmin />} />
           </Routes>
         </main>
       </div>

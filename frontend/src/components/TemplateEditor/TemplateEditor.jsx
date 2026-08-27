@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -8,6 +8,8 @@ export default function TemplateEditor() {
   // 1. Configuração Geral
   const [nomeTemplate, setNomeTemplate] = useState('');
   const [tipoDocumento, setTipoDocumento] = useState('etiqueta');
+  const [categoriaId, setCategoriaId] = useState('');
+  const [categorias, setCategorias] = useState([]);
   const [queries, setQueries] = useState([{ id: Date.now(), conexao_id: '', nome_alias_tabela: 'QueryPrincipal', query_sql: '' }]);
   const [conexoes, setConexoes] = useState([]);
   const [configFisica, setConfigFisica] = useState({
@@ -36,6 +38,35 @@ export default function TemplateEditor() {
 
   // 4. IA Generation
   const [loadingIA, setLoadingIA] = useState(false);
+
+  // --- Atalhos de Teclado ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignora se o usuário estiver digitando em um input, textarea ou select
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        return;
+      }
+      
+      if (e.key === 'Delete' && elementoSelecionado) {
+        setElementosCanvas(prev => prev.filter(el => el.id !== elementoSelecionado));
+        setElementoSelecionado(null);
+      }
+    };
+
+    const fetchCategorias = async () => {
+      try {
+        const res = await fetch('/api/categorias');
+        const data = await res.json();
+        setCategorias(data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchCategorias();
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [elementoSelecionado]);
 
   // --- Handlers para Inputs de Filtro ---
   const adicionarFiltro = () => {
@@ -205,6 +236,7 @@ export default function TemplateEditor() {
     const payload = { 
       nomeTemplate, 
       tipo_documento: tipoDocumento,
+      categoria_id: categoriaId,
       configuracoes_impressao: configFisica, 
       queries, 
       parametros_esperados: camposFiltro, 
@@ -258,6 +290,19 @@ export default function TemplateEditor() {
                 </button>
               </div>
             )}
+
+            <div className="form-group">
+              <label>Categoria do Modelo</label>
+              <select 
+                value={categoriaId} 
+                onChange={(e) => setCategoriaId(e.target.value)}
+              >
+                <option value="">Sem Categoria</option>
+                {categorias.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                ))}
+              </select>
+            </div>
 
             <div className="form-group">
               <label>Tipo de Documento</label>
