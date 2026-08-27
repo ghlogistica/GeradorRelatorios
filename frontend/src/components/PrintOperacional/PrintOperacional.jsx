@@ -272,7 +272,8 @@ export default function PrintOperacional() {
         }}>
           <div className="modal-content" style={{
               backgroundColor: '#fff', padding: '30px', borderRadius: '8px', 
-              width: '90%', maxWidth: '500px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              width: '90%', maxWidth: '500px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              maxHeight: '90vh', overflowY: 'auto'
           }}>
             <h2 style={{marginTop: 0, color: '#0f172a'}}>Dados Faltantes</h2>
             <p style={{marginBottom: '20px', color: '#64748b'}}>O sistema não encontrou as informações abaixo. Por favor, preencha manualmente para prosseguir com a impressão.</p>
