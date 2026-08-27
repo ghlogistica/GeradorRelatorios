@@ -31,6 +31,7 @@ function App() {
             </Link>
             <Link to="/conexoes" className="nav-item" title="Conexões ERP">
               <span className="nav-icon">🔌</span> {isSidebarOpen && <span className="nav-text">Conexões ERP</span>}
+            </Link>
             <Link to="/categorias" className="nav-item" title="Categorias">
               <span className="nav-icon">📂</span> {isSidebarOpen && <span className="nav-text">Categorias</span>}
             </Link>
