@@ -150,6 +150,10 @@ router.post('/gerar-documento', async (req, res) => {
                 const dadosFonte = dataAgregada[el.fonte_dados] || [];
                 const linhaDado = dadosFonte[0] || {};
                 el.valor_resolvido = linhaDado[el.coluna_banco] || '';
+                
+                if ((el.valor_resolvido === '' || el.valor_resolvido === null || el.valor_resolvido === undefined) && el.solicitar_manual_se_vazio) {
+                    el.precisa_input_manual = true;
+                }
             }
             return el;
         });

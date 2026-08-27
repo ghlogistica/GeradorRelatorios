@@ -160,6 +160,9 @@ export default function TemplateEditor() {
       fonte_dados: 'Estatico',
       coluna_banco: '',
       valor_estatico: tipo === 'texto' ? 'Texto Novo' : '123456789',
+      fundo_transparente: tipo === 'texto',
+      solicitar_manual_se_vazio: false,
+      label_manual: '',
       is_opcional: false,
       regra_condicional: ''
     };
@@ -541,7 +544,9 @@ export default function TemplateEditor() {
                     height: el.altura ? `${el.altura}px` : 'auto',
                     fontFamily: el.fonte,
                     fontSize: `${el.tamanho_fonte}px`,
-                    backgroundColor: el.tipo_elemento === 'texto' ? (el.cor_fundo || 'rgba(255, 255, 255, 0.95)') : 'transparent',
+                    backgroundColor: el.tipo_elemento === 'texto' 
+                      ? (el.fundo_transparente ? 'transparent' : (el.cor_fundo || 'rgba(255, 255, 255, 0.95)')) 
+                      : 'transparent',
                     padding: el.tipo_elemento === 'texto' ? '2px' : '0px',
                     outline: elementoSelecionado === el.id ? '1px dashed #0d6efd' : 'none',
                     cursor: draggingId === el.id ? 'grabbing' : 'grab',
@@ -632,11 +637,25 @@ export default function TemplateEditor() {
               </div>
 
               {(elementoAtivo.tipo_elemento === 'caixa' || elementoAtivo.tipo_elemento === 'linha' || elementoAtivo.tipo_elemento === 'texto') && (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label>Fundo</label>
-                    <input type="color" style={{padding:0, height:'30px', width:'100%'}} value={elementoAtivo.cor_fundo || '#ffffff'} onChange={(e) => atualizarElementoCanvas('cor_fundo', e.target.value)} />
-                  </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {elementoAtivo.tipo_elemento === 'texto' && (
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={elementoAtivo.fundo_transparente !== false}
+                          onChange={(e) => atualizarElementoCanvas('fundo_transparente', e.target.checked)}
+                        />
+                        Fundo Transparente
+                      </label>
+                    </div>
+                  )}
+                  {(!elementoAtivo.fundo_transparente || elementoAtivo.tipo_elemento !== 'texto') && (
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Fundo</label>
+                      <input type="color" style={{padding:0, height:'30px', width:'100%'}} value={elementoAtivo.cor_fundo || '#ffffff'} onChange={(e) => atualizarElementoCanvas('cor_fundo', e.target.value)} />
+                    </div>
+                  )}
                   <div className="form-group" style={{ flex: 1 }}>
                     <label>Cor Borda</label>
                     <input type="color" style={{padding:0, height:'30px', width:'100%'}} value={elementoAtivo.cor_borda || '#000000'} onChange={(e) => atualizarElementoCanvas('cor_borda', e.target.value)} />
@@ -694,15 +713,38 @@ export default function TemplateEditor() {
                   />
                 </div>
               ) : (
-                <div className="form-group">
-                  <label>Nome da Coluna na Query</label>
-                  <input 
-                    type="text" 
-                    value={elementoAtivo.coluna_banco}
-                    onChange={(e) => atualizarElementoCanvas('coluna_banco', e.target.value)}
-                    placeholder="ex: nome_cliente"
-                  />
-                </div>
+                <>
+                  <div className="form-group">
+                    <label>Nome da Coluna na Query</label>
+                    <input 
+                      type="text" 
+                      value={elementoAtivo.coluna_banco}
+                      onChange={(e) => atualizarElementoCanvas('coluna_banco', e.target.value)}
+                      placeholder="ex: nome_cliente"
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginTop: '10px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={elementoAtivo.solicitar_manual_se_vazio || false}
+                        onChange={(e) => atualizarElementoCanvas('solicitar_manual_se_vazio', e.target.checked)}
+                      />
+                      Se vazio, pedir preenchimento manual
+                    </label>
+                  </div>
+                  {elementoAtivo.solicitar_manual_se_vazio && (
+                    <div className="form-group">
+                      <label>Texto da Pergunta (Label)</label>
+                      <input 
+                        type="text" 
+                        value={elementoAtivo.label_manual || ''}
+                        onChange={(e) => atualizarElementoCanvas('label_manual', e.target.value)}
+                        placeholder="Ex: Digite o Nome do Motorista"
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #eee' }} />
