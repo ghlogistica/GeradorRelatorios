@@ -392,11 +392,14 @@ export default function TemplateEditor() {
             </div>
 
             <div className="form-group queries-group">
-              <label>Queries (Multi-Bancos)</label>
-              {queries.map((q, index) => (
+              <label>Fontes de Dados (SQL / APIs)</label>
+              {queries.map((q, index) => {
+                const tipoConexao = conexoes.find(conn => conn.id === q.conexao_id)?.tipo_banco;
+                const isApiRest = tipoConexao === 'api_rest';
+                return (
                 <div key={q.id} className="query-card">
                   <div className="query-card-header">
-                    <span>Query {index + 1}</span>
+                    <span>{isApiRest ? 'Requisição API' : 'Query Banco'} {index + 1}</span>
                     <button className="btn-icon delete" onClick={() => setQueries(queries.filter(query => query.id !== q.id))}>🗑️</button>
                   </div>
                   <input 
@@ -418,12 +421,12 @@ export default function TemplateEditor() {
                   </select>
                   <textarea 
                     className="code-editor" 
-                    placeholder="SELECT * FROM clientes WHERE id = :cliente_id"
+                    placeholder={isApiRest ? "Caminho do Endpoint (ex: /api/v1/pedidos/:numero_pedido)" : "SELECT * FROM clientes WHERE id = :cliente_id"}
                     value={q.query_sql}
                     onChange={(e) => setQueries(queries.map(query => query.id === q.id ? { ...query, query_sql: e.target.value } : query))}
                   ></textarea>
                 </div>
-              ))}
+              )})}
               <button 
                 className="btn-secondary add-query-btn" 
                 onClick={() => setQueries([...queries, { id: Date.now(), conexao_id: '', nome_alias_tabela: '', query_sql: '' }])}

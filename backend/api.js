@@ -121,6 +121,49 @@ router.post('/gerar-documento', async (req, res) => {
                     dataAgregada[nome_alias_tabela] = rs.recordset;
                     
                     await pool.close();
+                } else if (configDb.tipo_banco === 'api_rest') {
+                    console.log(`[API REST] Conectando em ${configDb.host} para buscar ${nome_alias_tabela}`);
+                    
+                    let endpointTratado = query_sql;
+                    for (const [key, value] of Object.entries(parametros)) {
+                        const regexParametro = new RegExp(`:${key}\\b`, 'g');
+                        endpointTratado = endpointTratado.replace(regexParametro, encodeURIComponent(value));
+                    }
+                    
+                    const baseUrl = configDb.host.replace(/\/$/, '');
+                    const path = endpointTratado.startsWith('/') ? endpointTratado : `/${endpointTratado}`;
+                    const urlFinal = `${baseUrl}${path}`;
+                    
+                    console.log(`[API REST] GET ${urlFinal}`);
+                    
+                    const headers = { 'Content-Type': 'application/json' };
+                    
+                    if (configDb.usuario && configDb.senha) {
+                        headers['Authorization'] = 'Basic ' + Buffer.from(`${configDb.usuario}:${decrypt(configDb.senha)}`).toString('base64');
+                    } else if (configDb.senha && !configDb.usuario) {
+                        headers['Authorization'] = `Bearer ${decrypt(configDb.senha)}`;
+                    }
+                    
+                    const response = await fetch(urlFinal, { method: 'GET', headers });
+                    if (!response.ok) {
+                        throw new Error(`Erro na API REST (${response.status} ${response.statusText})`);
+                    }
+                    
+                    let jsonResult = await response.json();
+                    
+                    // Padroniza o retorno para um array (para funcionar igual ao recordset do SQL)
+                    if (!Array.isArray(jsonResult)) {
+                        // Se o json vier dentro de uma chave "data" ou "results", tenta pegar
+                        if (jsonResult.data && Array.isArray(jsonResult.data)) {
+                            jsonResult = jsonResult.data;
+                        } else if (jsonResult.results && Array.isArray(jsonResult.results)) {
+                            jsonResult = jsonResult.results;
+                        } else {
+                            jsonResult = [jsonResult];
+                        }
+                    }
+                    
+                    dataAgregada[nome_alias_tabela] = jsonResult;
                 } else {
                      console.log(`Banco tipo ${configDb.tipo_banco} não suportado ainda.`);
                 }

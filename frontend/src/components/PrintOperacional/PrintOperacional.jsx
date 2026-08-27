@@ -237,14 +237,14 @@ export default function PrintOperacional() {
           <div className="dynamic-inputs-area">
             {camposDinamicos.map(campo => (
               <div className="form-group-large" key={campo.id}>
-                <label>{campo.label_exibicao}</label>
+                <label>{campo.label_exibicao || campo.nome_campo || 'Campo Dinâmico'}</label>
                 <input 
                   type={campo.tipo_dado === 'numero' ? 'number' : 'text'}
                   className="large-input"
                   name={campo.nome_campo}
                   value={formData[campo.nome_campo] || ''}
                   onChange={handleInputChange}
-                  placeholder={`Digite ou bipe o ${campo.label_exibicao.toLowerCase()}`}
+                  placeholder={`Digite ou bipe o ${campo.label_exibicao ? campo.label_exibicao.toLowerCase() : (campo.nome_campo || 'valor')}`}
                   required
                 />
               </div>

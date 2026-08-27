@@ -136,35 +136,40 @@ export default function ConexoesAdmin() {
                 <option value="sqlserver">SQL Server</option>
                 <option value="mysql">MySQL</option>
                 <option value="oracle">Oracle</option>
+                <option value="api_rest">Web Service (REST API)</option>
               </select>
             </div>
 
             <div className="form-row">
-              <div className="form-group half">
-                <label>Host / IP</label>
+              <div className={formData.tipo_banco === 'api_rest' ? "form-group full" : "form-group half"}>
+                <label>{formData.tipo_banco === 'api_rest' ? 'URL Base (Ex: https://api.empresa.com.br)' : 'Host / IP'}</label>
                 <input type="text" name="host" value={formData.host} onChange={handleChange} />
               </div>
-              <div className="form-group half">
-                <label>Porta</label>
-                <input type="number" name="porta" value={formData.porta} onChange={handleChange} />
-              </div>
+              {formData.tipo_banco !== 'api_rest' && (
+                <div className="form-group half">
+                  <label>Porta</label>
+                  <input type="number" name="porta" value={formData.porta} onChange={handleChange} />
+                </div>
+              )}
             </div>
 
             <div className="form-row">
               <div className="form-group half">
-                <label>Usuário</label>
+                <label>{formData.tipo_banco === 'api_rest' ? 'Usuário (Opcional)' : 'Usuário'}</label>
                 <input type="text" name="usuario" value={formData.usuario} onChange={handleChange} />
               </div>
               <div className="form-group half">
-                <label>Senha</label>
+                <label>{formData.tipo_banco === 'api_rest' ? 'Senha / Bearer Token' : 'Senha'}</label>
                 <input type="password" name="senha" value={formData.senha} onChange={handleChange} placeholder={formData.id ? 'Deixe vazio ou igual para não alterar' : ''} />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Nome do Banco (Database)</label>
-              <input type="text" name="database" value={formData.database} onChange={handleChange} />
-            </div>
+            {formData.tipo_banco !== 'api_rest' && (
+              <div className="form-group">
+                <label>Nome do Banco (Database)</label>
+                <input type="text" name="database" value={formData.database} onChange={handleChange} />
+              </div>
+            )}
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setShowModal(false)} disabled={isLoading}>Cancelar</button>
