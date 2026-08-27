@@ -2,13 +2,19 @@ const express = require('express');
 const mssql = require('mssql');
 const crypto = require('crypto');
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'chavede32caracterespadrao1234567'; // 32 chars
+const RAW_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'chavede32caracterespadrao1234567'; // 32 chars
+let ENCRYPTION_KEY_BUFFER;
+if (Buffer.from(RAW_ENCRYPTION_KEY).length === 32) {
+    ENCRYPTION_KEY_BUFFER = Buffer.from(RAW_ENCRYPTION_KEY);
+} else {
+    ENCRYPTION_KEY_BUFFER = crypto.createHash('sha256').update(String(RAW_ENCRYPTION_KEY)).digest();
+}
 const IV_LENGTH = 16;
 
 function encrypt(text) {
     if (!text) return text;
     let iv = crypto.randomBytes(IV_LENGTH);
-    let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+    let cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -20,7 +26,7 @@ function decrypt(text) {
         let textParts = text.split(':');
         let iv = Buffer.from(textParts.shift(), 'hex');
         let encryptedText = Buffer.from(textParts.join(':'), 'hex');
-        let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+        let decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY_BUFFER, iv);
         let decrypted = decipher.update(encryptedText);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString();
@@ -357,7 +363,7 @@ router.post('/conexoes_banco', async (req, res) => {
             nome_conexao,
             tipo_banco,
             host,
-            porta: Number(porta),
+            porta: porta ? Number(porta) : null,
             usuario,
             database
         };
