@@ -172,7 +172,7 @@ router.post('/gerar-documento', async (req, res) => {
 
     } catch (error) {
         console.error('Erro ao executar query do template:', error);
-        return res.status(500).json({ error: 'Erro interno ao processar o documento.' });
+        return res.status(500).json({ error: 'Erro interno ao processar o documento: ' + error.message, stack: error.stack });
     }
 });
 
