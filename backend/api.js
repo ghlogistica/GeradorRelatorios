@@ -162,33 +162,35 @@ router.post('/parse-label-image', upload.single('imagem'), async (req, res) => {
         const mimeType = req.file.mimetype; // ex: application/pdf ou image/jpeg
         const fileBase64 = req.file.buffer.toString('base64');
 
-        const prompt = `Você é um engenheiro de software especialista em extração de layout para sistemas geradores de relatórios e etiquetas.
-O usuário fez o upload de um arquivo (imagem ou PDF).
-Sua tarefa é analisar o visual do arquivo e mapear onde cada bloco de texto ou elemento visual (como código de barras) está localizado.
+        const prompt = `Você é um especialista em visão computacional e extração de layout.
+O usuário enviou um documento (imagem ou PDF). Extraia a estrutura visual dele.
 
-Importante: O "Canvas" do nosso sistema considera:
-- A posição X e Y é dada em pixels (assuma que 1 cm no papel real = ~38 pixels na tela).
-- Assuma que o documento tem aproximadamente 21x29.7cm (A4) ou é uma etiqueta menor. Baseie-se no tamanho relativo para calcular X e Y absolutos.
+INSTRUÇÕES CRÍTICAS SOBRE COORDENADAS:
+Você deve usar o sistema de coordenadas normalizadas padrão (0 a 1000), onde:
+[0, 0] é o canto superior esquerdo.
+[1000, 1000] é o canto inferior direito.
 
-Sua resposta DEVE ser EXCLUSIVAMENTE um objeto JSON válido, contendo um array de objetos chamado "elementos", seguindo EXATAMENTE este schema para cada elemento:
+Sua resposta DEVE ser EXCLUSIVAMENTE um objeto JSON válido, contendo um array "elementos".
+Schema de cada elemento:
 {
   "id": número inteiro único aleatório,
-  "tipo_elemento": "texto" (para texto) ou "codigo_barras" (se identificar código de barras),
-  "posicao_x": inteiro (pixel estimado na tela),
-  "posicao_y": inteiro (pixel estimado na tela),
+  "tipo_elemento": "texto" (ou "codigo_barras"),
+  "x_normalizado": inteiro de 0 a 1000 (posição horizontal do início do texto),
+  "y_normalizado": inteiro de 0 a 1000 (posição vertical do meio do texto),
   "fonte": "Arial",
-  "tamanho_fonte": inteiro (tamanho estimado em pixels, ex: 14 para normal, 24 para título),
+  "tamanho_fonte_normalizado": inteiro (proporção do tamanho da fonte de 0 a 1000. Ex: 10 para normal, 20 para título grande),
   "fonte_dados": "Estatico",
   "coluna_banco": "",
-  "valor_estatico": "O texto que você leu",
+  "valor_estatico": "Texto lido do documento",
   "is_opcional": false,
   "regra_condicional": ""
 }
 
-Tente diferenciar textos fixos (como cabeçalhos de tabela: "Placa Cavalo:") de dados preenchidos ("IXS9B03").
-Se for um dado que varia por relatório (ex: o nome de uma pessoa, uma placa, uma data), você ainda o mapeará como "Estatico", mas no "valor_estatico" coloque "[Campo Dinâmico: Valor Lido]".
-Tente mapear os principais blocos do documento.
-Retorne APENAS o JSON, sem markdown ou formatação de código (\`\`\`).`;
+Regras:
+1. Agrupe palavras da mesma frase em um único elemento. Não separe cada palavra.
+2. Identifique corretamente a coluna e a linha para que textos na mesma linha tenham o mesmo y_normalizado.
+3. Para campos preenchidos a caneta ou sistema (ex: nome de motorista, data), coloque "valor_estatico" como "[Campo Dinâmico: valor que você leu]". Para cabeçalhos ("Nome:", "Data:"), coloque o texto normal.
+4. Retorne APENAS JSON puro. Sem formatação markdown (\`\`\`json).`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3.1-pro-preview',
@@ -209,9 +211,26 @@ Retorne APENAS o JSON, sem markdown ou formatação de código (\`\`\`).`;
         const jsonString = response.text;
         const data = JSON.parse(jsonString);
 
+        // Converte coordenadas normalizadas (0-1000) para pixels do Canvas (ex: A4 = 794x1123)
+        const LARGURA_A4_PX = 794;
+        const ALTURA_A4_PX = 1123;
+        
+        const elementosTratados = (data.elementos || []).map(el => {
+            const pxX = Math.round(((el.x_normalizado || 0) / 1000) * LARGURA_A4_PX);
+            const pxY = Math.round(((el.y_normalizado || 0) / 1000) * ALTURA_A4_PX);
+            const tFonte = Math.max(10, Math.round(((el.tamanho_fonte_normalizado || 15) / 1000) * ALTURA_A4_PX));
+            
+            return {
+                ...el,
+                posicao_x: pxX,
+                posicao_y: pxY,
+                tamanho_fonte: tFonte > 30 ? 30 : tFonte // Limita fonte pra não ficar gigantesco no canvas
+            };
+        });
+
         return res.status(200).json({
             success: true,
-            elementos: data.elementos
+            elementos: elementosTratados
         });
     } catch (error) {
         console.error('Erro na IA:', error);
