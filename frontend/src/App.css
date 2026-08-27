@@ -20,6 +20,12 @@ body {
   flex-direction: column;
   box-shadow: 2px 0 10px rgba(0,0,0,0.1);
   flex-shrink: 0;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 70px;
 }
 
 .sidebar-header {
@@ -32,6 +38,11 @@ body {
   max-width: 80%;
   height: auto;
   margin-bottom: 15px;
+  transition: max-width 0.3s ease;
+}
+
+.sidebar.collapsed .brand-logo {
+  max-width: 40px;
 }
 
 .brand-name {
@@ -74,6 +85,11 @@ body {
   background-color: #002972; /* Cor Secundária (Hover) GH */
   color: #fff;
   border-left-color: #ff6700; /* Cor Terciária (Destaques) GH */
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
 }
 
 .nav-icon {

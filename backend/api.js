@@ -215,7 +215,7 @@ Retorne APENAS o JSON, sem markdown ou formatação de código (\`\`\`).`;
         });
     } catch (error) {
         console.error('Erro na IA:', error);
-        return res.status(500).json({ success: false, error: 'Erro ao processar documento com a IA.' });
+        return res.status(500).json({ success: false, error: error.message || 'Erro ao processar documento com a IA.' });
     }
 });
 

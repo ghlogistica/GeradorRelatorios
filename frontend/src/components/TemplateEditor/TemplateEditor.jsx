@@ -112,7 +112,7 @@ export default function TemplateEditor() {
       if (data.success && data.elementos) {
         setElementosCanvas(data.elementos);
       } else {
-        alert('Erro ao processar imagem pela IA.');
+        alert('Falha na IA: ' + (data.error || 'Erro desconhecido.'));
       }
     } catch (error) {
       console.error(error);
@@ -158,7 +158,7 @@ export default function TemplateEditor() {
   return (
     <div className="editor-container">
       <header className="editor-header">
-        <h1>Criar Modelo de Etiqueta (Zebra)</h1>
+        <h1>{tipoDocumento === 'relatorio_a4' ? 'Criar Modelo de Relatório A4' : 'Criar Modelo de Etiqueta (Zebra)'}</h1>
         <button className="btn-primary" onClick={handleSalvarModelo}>Salvar Modelo</button>
       </header>
 
@@ -330,7 +330,7 @@ export default function TemplateEditor() {
 
         {/* CENTRO: Canvas da Etiqueta */}
         <main className="editor-main-canvas">
-          <h2>3. Canvas da Etiqueta ({configFisica.largura}cm x {configFisica.altura}cm)</h2>
+          <h2>3. Canvas {tipoDocumento === 'relatorio_a4' ? 'do Relatório' : 'da Etiqueta'} ({configFisica.largura}cm x {configFisica.altura}cm)</h2>
           <div className="canvas-wrapper" style={tipoDocumento === 'relatorio_a4' ? { backgroundColor: '#e2e8f0', padding: '20px' } : {}}>
             <div 
               className="etiqueta-canvas"
