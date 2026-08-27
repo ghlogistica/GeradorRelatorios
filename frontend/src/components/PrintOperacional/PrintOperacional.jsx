@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { jsPDF } from 'jspdf';
 import './PrintOperacional.css';
 
 export default function PrintOperacional() {
@@ -175,12 +176,75 @@ export default function PrintOperacional() {
 
   // 4. Função que cuida do envio para a impressora (ex: via rede, ou Web Print)
   const dispararImpressaoZebra = (dados) => {
-    console.log('Enviando para impressora...', dados);
-    // Aqui viria a lógica de integrar com QZ Tray, Browser Print (Zebra) ou raw socket TCP.
-    // Para simplificar a experiência do usuário:
-    setTimeout(() => {
-      alert('✅ Relatório/Etiqueta enviado com sucesso para a fila de impressão!');
-    }, 500);
+    console.log('Gerando PDF...', dados);
+    try {
+      const config = dados.documento.configuracoes;
+      const cmToPx = 37.8;
+      const isRetrato = config.orientacao === 'retrato';
+      
+      // O jsPDF com unidade 'px' usará os exatos pixels do Canvas
+      const widthPx = (isRetrato ? config.largura : config.altura) * cmToPx;
+      const heightPx = (isRetrato ? config.altura : config.largura) * cmToPx;
+
+      const doc = new jsPDF({
+        orientation: isRetrato ? 'p' : 'l',
+        unit: 'px',
+        format: [widthPx, heightPx],
+        compress: true
+      });
+
+      // Imagem de Fundo (se houver)
+      if (config.imagem_fundo) {
+        doc.addImage(config.imagem_fundo, 'JPEG', 0, 0, widthPx, heightPx);
+      }
+
+      dados.elementos_finais.forEach(el => {
+        const x = el.posicao_x;
+        const y = el.posicao_y;
+
+        if (el.tipo_elemento === 'texto') {
+          // Fallback seguro de fonte
+          const fonteValida = el.fonte && ['Arial', 'Helvetica', 'Times', 'Courier'].includes(el.fonte) ? el.fonte : 'Helvetica';
+          doc.setFont(fonteValida, el.negrito ? 'bold' : 'normal');
+          doc.setFontSize(el.tamanho_fonte || 14);
+          
+          // jsPDF doc.text() desenha o texto baseado na baseline, então somamos 80% do tamanho da fonte ao Y
+          doc.setTextColor(0, 0, 0); 
+          doc.text(String(el.valor_resolvido || ''), x, y + (el.tamanho_fonte || 14) * 0.8);
+        }
+        else if (el.tipo_elemento === 'caixa') {
+          doc.setDrawColor(el.cor_borda || '#000000');
+          doc.setLineWidth(el.espessura_borda || 1);
+          if (el.cor_fundo && el.cor_fundo !== 'transparent') {
+            doc.setFillColor(el.cor_fundo);
+            doc.rect(x, y, el.largura || 100, el.altura || 50, 'FD');
+          } else {
+            doc.rect(x, y, el.largura || 100, el.altura || 50, 'D');
+          }
+        }
+        else if (el.tipo_elemento === 'linha') {
+          doc.setDrawColor(el.cor_borda || '#000000');
+          doc.setLineWidth(el.altura || 2);
+          doc.line(x, y, x + (el.largura || 100), y);
+        }
+        else if (el.tipo_elemento === 'codigo_barras') {
+          doc.setFont('Courier', 'bold');
+          doc.setFontSize(12);
+          doc.text(`[ BARCODE: ${el.valor_resolvido || ''} ]`, x, y + 12);
+        }
+        else if (el.tipo_elemento === 'qrcode') {
+          doc.setFont('Courier', 'bold');
+          doc.setFontSize(12);
+          doc.text(`[ QR: ${el.valor_resolvido || ''} ]`, x, y + 12);
+        }
+      });
+
+      // Abre o PDF nativo em uma nova aba/janela
+      doc.output('dataurlnewwindow');
+    } catch (error) {
+      console.error('Erro ao gerar PDF em tela:', error);
+      alert('Houve um erro ao gerar o PDF. Verifique o console.');
+    }
   };
 
   return (
