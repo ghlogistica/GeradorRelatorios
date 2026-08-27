@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import './PrintOperacional.css';
 
 export default function PrintOperacional() {
+  const { userProfile } = useAuth();
   const [templates, setTemplates] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('');
@@ -25,17 +27,35 @@ export default function PrintOperacional() {
           fetch('/api/categorias')
         ]);
         if (resTemplates.ok) setTemplates(await resTemplates.json());
-        if (resCategorias.ok) setCategorias(await resCategorias.json());
+        if (resCategorias.ok) {
+          const allCats = await resCategorias.json();
+          // Filtra categorias baseado no perfil do usuário
+          if (userProfile?.isAdmin || userProfile?.categorias_modelos === 'todas') {
+            setCategorias(allCats);
+          } else {
+            const allowedIds = userProfile?.categorias_modelos || [];
+            setCategorias(allCats.filter(c => allowedIds.includes(c.id)));
+          }
+        }
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
       }
     };
-    fetchData();
-  }, []);
+    if (userProfile) {
+      fetchData();
+    }
+  }, [userProfile]);
+
+  // Filtra templates para exibir apenas os que pertencem às categorias permitidas
+  const templatesPermitidos = templates.filter(t => {
+    if (userProfile?.isAdmin || userProfile?.categorias_modelos === 'todas') return true;
+    const allowedIds = userProfile?.categorias_modelos || [];
+    return allowedIds.includes(t.categoria_id);
+  });
 
   const templatesFiltrados = categoriaSelecionada 
-    ? templates.filter(t => t.categoria_id === categoriaSelecionada)
-    : templates;
+    ? templatesPermitidos.filter(t => t.categoria_id === categoriaSelecionada)
+    : templatesPermitidos;
 
   // 2. Ao selecionar um template, busca os campos_input vinculados a ele
   useEffect(() => {

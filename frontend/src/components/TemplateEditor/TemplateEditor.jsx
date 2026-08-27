@@ -309,7 +309,7 @@ export default function TemplateEditor() {
   return (
     <div className="editor-container">
       <header className="editor-header">
-        <h1>{tipoDocumento === 'relatorio_a4' ? 'Criar Modelo de Relatório A4' : 'Criar Modelo de Etiqueta (Zebra)'}</h1>
+        <h1>{tipoDocumento === 'relatorio_a4' ? 'Criar Modelo de Relatório A4' : 'Criar Modelo de Documento (Zebra)'}</h1>
         <button className="btn-primary" onClick={handleSalvarModelo}>Salvar Modelo</button>
       </header>
 
@@ -322,7 +322,7 @@ export default function TemplateEditor() {
               <label>Nome do Template</label>
               <input 
                 type="text" 
-                placeholder={tipoDocumento === 'relatorio_a4' ? 'Ex: Ordem de Carregamento' : 'Ex: Etiqueta de Expedição'}
+                placeholder={tipoDocumento === 'relatorio_a4' ? 'Ex: Ordem de Carregamento' : 'Ex: Documento de Expedição'}
                 value={nomeTemplate}
                 onChange={(e) => setNomeTemplate(e.target.value)}
               />
@@ -360,7 +360,7 @@ export default function TemplateEditor() {
                   }
                 }}
               >
-                <option value="etiqueta">Etiqueta Zebra (Personalizada)</option>
+                <option value="etiqueta">Documento Zebra (Personalizado)</option>
                 <option value="relatorio_a4">Relatório A4 (Impressora Comum)</option>
               </select>
             </div>
@@ -490,7 +490,7 @@ export default function TemplateEditor() {
 
         {/* CENTRO: Canvas da Etiqueta */}
         <main className="editor-main-canvas">
-          <h2>3. Canvas {tipoDocumento === 'relatorio_a4' ? 'do Relatório' : 'da Etiqueta'} ({configFisica.largura}cm x {configFisica.altura}cm)</h2>
+          <h2>3. Canvas do {tipoDocumento === 'relatorio_a4' ? 'Relatório' : 'Documento'} ({configFisica.largura}cm x {configFisica.altura}cm)</h2>
           <div className="canvas-wrapper" style={tipoDocumento === 'relatorio_a4' ? { backgroundColor: '#e2e8f0', padding: '20px' } : {}}>
             <div 
               className="etiqueta-canvas"
@@ -525,7 +525,7 @@ export default function TemplateEditor() {
               {loadingIA && (
                 <div className="ia-loading-overlay">
                   <div className="spinner"></div>
-                  <p>A IA está analisando {tipoDocumento === 'relatorio_a4' ? 'seu relatório' : 'sua etiqueta'}...</p>
+                  <p>A IA está analisando {tipoDocumento === 'relatorio_a4' ? 'seu relatório' : 'seu documento'}...</p>
                 </div>
               )}
               {elementosCanvas.map(el => (
@@ -556,7 +556,7 @@ export default function TemplateEditor() {
                 >
                   {el.tipo_elemento === 'codigo_barras' && '||||||||||||||||'}
                   {el.tipo_elemento === 'qrcode' && '[ QR ]'}
-                  {el.tipo_elemento === 'texto' && (el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.fonte_dados}.${el.coluna_banco}]`)}
+                  {el.tipo_elemento === 'texto' && (el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.coluna_banco || 'Coluna'}]`)}
                   {el.tipo_elemento === 'caixa' && <div style={{width:'100%', height:'100%', border: `${el.espessura_borda || 1}px solid ${el.cor_borda || '#000'}`, backgroundColor: el.cor_fundo || 'transparent'}}></div>}
                   {el.tipo_elemento === 'linha' && <div style={{width:'100%', height:'100%', backgroundColor: el.cor_borda || '#000'}}></div>}
                   {el.tipo_elemento === 'imagem' && (el.url_imagem ? <img src={el.url_imagem} style={{width:'100%', height:'100%', objectFit:'contain'}} alt="Elemento"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#eee', border:'1px dashed #ccc'}}>[ IMAGEM ]</div>)}

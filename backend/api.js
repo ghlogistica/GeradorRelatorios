@@ -1,6 +1,7 @@
 const express = require('express');
 const mssql = require('mssql');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const RAW_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'chavede32caracterespadrao1234567'; // 32 chars
 let ENCRYPTION_KEY_BUFFER;
@@ -523,3 +524,258 @@ router.delete('/conexoes_banco/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+// --- ROTAS PARA PERFIS DE ACESSO ---
+
+// Listar Perfis (GET)
+router.get('/perfis', async (req, res) => {
+    try {
+        const snapshot = await db.collection('perfis').get();
+        const perfis = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        res.status(200).json(perfis);
+    } catch (error) {
+        console.error('Erro ao buscar perfis:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar perfis.' });
+    }
+});
+
+// Criar/Atualizar Perfil (POST)
+router.post('/perfis', async (req, res) => {
+    try {
+        const { id, nome, telas_acesso, categorias_modelos, isAdmin } = req.body;
+        const payload = { 
+            nome, 
+            telas_acesso: telas_acesso || [], 
+            categorias_modelos: categorias_modelos || [],
+            isAdmin: isAdmin || false,
+            data_atualizacao: new Date().toISOString() 
+        };
+
+        if (id) {
+            await db.collection('perfis').doc(id).update(payload);
+            res.json({ success: true, id });
+        } else {
+            payload.data_criacao = new Date().toISOString();
+            const ref = await db.collection('perfis').add(payload);
+            res.json({ success: true, id: ref.id });
+        }
+    } catch (error) {
+        console.error('Erro ao salvar perfil:', error);
+        res.status(500).json({ error: 'Erro interno ao salvar perfil.' });
+    }
+});
+
+// Deletar Perfil (DELETE)
+router.delete('/perfis/:id', async (req, res) => {
+    try {
+        await db.collection('perfis').doc(req.params.id).delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao excluir perfil:', error);
+        res.status(500).json({ error: 'Erro interno ao excluir perfil.' });
+    }
+});
+
+
+// --- ROTAS PARA USUÁRIOS E CONVITES ---
+
+// Listar Usuários (GET)
+router.get('/usuarios', async (req, res) => {
+    try {
+        const snapshot = await db.collection('usuarios').get();
+        const usuarios = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        res.status(200).json(usuarios);
+    } catch (error) {
+        console.error('Erro ao buscar usuarios:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar usuarios.' });
+    }
+});
+
+// Convidar Novo Usuário (POST)
+router.post('/usuarios/convidar', async (req, res) => {
+    try {
+        const { email, perfil_id } = req.body;
+        
+        if (!email || !perfil_id) {
+            return res.status(400).json({ error: 'Email e perfil_id são obrigatórios.' });
+        }
+
+        // Verifica se o usuário já existe
+        const userExists = await db.collection('usuarios').where('email', '==', email).get();
+        if (!userExists.empty) {
+            return res.status(400).json({ error: 'Este e-mail já foi convidado/cadastrado.' });
+        }
+
+        const payload = { 
+            email, 
+            perfil_id,
+            status: 'pendente',
+            data_convite: new Date().toISOString() 
+        };
+
+        const ref = await db.collection('usuarios').add(payload);
+
+        // Envio do e-mail de convite
+        // Se as variáveis SMTP estiverem configuradas, envia o e-mail real.
+        if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+            const transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST,
+                port: process.env.SMTP_PORT || 587,
+                secure: process.env.SMTP_SECURE === 'true',
+                auth: {
+                    user: process.env.SMTP_USER,
+                    pass: process.env.SMTP_PASS
+                }
+            });
+
+            const linkAcesso = process.env.FRONTEND_URL || 'https://geradorrelatorios-git-1086248605321.us-east1.run.app';
+            
+            await transporter.sendMail({
+                from: `"GH Relatórios" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: "Convite para acessar o GH Relatórios",
+                html: `
+                    <h2>Você foi convidado!</h2>
+                    <p>Você recebeu um convite para acessar o sistema GH Relatórios.</p>
+                    <p>Clique no link abaixo para acessar e fazer o login com esta conta do Google:</p>
+                    <a href="${linkAcesso}" style="display:inline-block; padding:10px 20px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px;">Acessar Sistema</a>
+                `
+            });
+            console.log(`Convite enviado para ${email}`);
+        } else {
+            console.log(`[AVISO] Variáveis SMTP não configuradas. O e-mail de convite para ${email} NÃO foi enviado de fato.`);
+        }
+
+        res.json({ success: true, id: ref.id, message: 'Usuário convidado com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao convidar usuario:', error);
+        res.status(500).json({ error: 'Erro interno ao convidar usuário.' });
+    }
+});
+
+// Atualizar Usuário (ex: mudar perfil) (PUT)
+router.put('/usuarios/:id', async (req, res) => {
+    try {
+        const { perfil_id } = req.body;
+        await db.collection('usuarios').doc(req.params.id).update({
+            perfil_id,
+            data_atualizacao: new Date().toISOString()
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao atualizar usuario:', error);
+        res.status(500).json({ error: 'Erro interno ao atualizar usuário.' });
+    }
+});
+
+// Deletar Usuário (DELETE)
+router.delete('/usuarios/:id', async (req, res) => {
+    try {
+        await db.collection('usuarios').doc(req.params.id).delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Erro ao excluir usuario:', error);
+        res.status(500).json({ error: 'Erro interno ao excluir usuario.' });
+    }
+});
+
+// --- ROTA DE AUTENTICAÇÃO E PERFIL (ME) ---
+// Retorna os dados do usuário e do perfil baseado no e-mail logado no Firebase
+router.get('/me', async (req, res) => {
+    try {
+        const email = req.query.email;
+        if (!email) {
+            return res.status(400).json({ error: 'E-mail não fornecido.' });
+        }
+
+        const userSnap = await db.collection('usuarios').where('email', '==', email).get();
+        if (userSnap.empty) {
+            return res.status(403).json({ error: 'Usuário não cadastrado/convidado.', code: 'NOT_INVITED' });
+        }
+
+        const usuario = { id: userSnap.docs[0].id, ...userSnap.docs[0].data() };
+
+        // Se estiver pendente, marcamos como ativo (fez o primeiro login)
+        if (usuario.status === 'pendente') {
+            await db.collection('usuarios').doc(usuario.id).update({ status: 'ativo' });
+            usuario.status = 'ativo';
+        }
+
+        // Buscar o perfil do usuário
+        let perfil = null;
+        if (usuario.perfil_id) {
+            const perfilDoc = await db.collection('perfis').doc(usuario.perfil_id).get();
+            if (perfilDoc.exists) {
+                perfil = { id: perfilDoc.id, ...perfilDoc.data() };
+            }
+        }
+
+        if (!perfil) {
+            return res.status(403).json({ error: 'Perfil não encontrado ou não atribuído.', code: 'NO_PROFILE' });
+        }
+
+        res.json({ usuario, perfil });
+    } catch (error) {
+        console.error('Erro no /api/me:', error);
+        res.status(500).json({ error: 'Erro interno ao validar usuário.' });
+    }
+});
+
+// --- ROTA DE SEEDING (Inicialização) ---
+// Rota para criar o perfil Administrador e o usuário Ana Araujo
+router.get('/setup-auth', async (req, res) => {
+    try {
+        // 1. Verifica se já existe um perfil Administrador
+        let adminProfileId = null;
+        const perfisSnap = await db.collection('perfis').where('isAdmin', '==', true).get();
+        
+        if (perfisSnap.empty) {
+            // Cria o perfil
+            const newAdmin = {
+                nome: 'Administrador',
+                isAdmin: true,
+                telas_acesso: ['print', 'admin', 'editor', 'conexoes', 'categorias', 'perfis', 'usuarios'],
+                categorias_modelos: 'todas',
+                data_criacao: new Date().toISOString()
+            };
+            const docRef = await db.collection('perfis').add(newAdmin);
+            adminProfileId = docRef.id;
+            console.log('Perfil Administrador criado.');
+        } else {
+            adminProfileId = perfisSnap.docs[0].id;
+            console.log('Perfil Administrador já existia.');
+        }
+
+        // 2. Verifica se a Ana já está cadastrada
+        const emailAna = 'ana.araujo@ghlogistica.com.br';
+        const anaSnap = await db.collection('usuarios').where('email', '==', emailAna).get();
+
+        if (anaSnap.empty) {
+            const anaUser = {
+                email: emailAna,
+                perfil_id: adminProfileId,
+                status: 'ativo', // Já ativa para não precisar ser convidada novamente
+                data_criacao: new Date().toISOString()
+            };
+            await db.collection('usuarios').add(anaUser);
+            console.log('Usuário Ana criado.');
+        } else {
+            // Atualiza caso o perfil ID esteja diferente
+            await db.collection('usuarios').doc(anaSnap.docs[0].id).update({
+                perfil_id: adminProfileId
+            });
+            console.log('Usuário Ana já existia. Perfil atualizado.');
+        }
+
+        res.json({ success: true, message: 'Setup de Auth concluído!' });
+    } catch (error) {
+        console.error('Erro no setup-auth:', error);
+        res.status(500).json({ error: 'Erro interno no setup de auth.' });
+    }
+});

@@ -47,7 +47,7 @@ export default function TemplateDashboard() {
   return (
     <div className="admin-container">
       <div className="admin-header">
-        <h1>Modelos de Etiqueta (Dashboards)</h1>
+        <h1>Modelos de Relatórios (Dashboards)</h1>
         <button className="btn-primary" onClick={() => navigate('/editor')}>+ Novo Modelo</button>
       </div>
 

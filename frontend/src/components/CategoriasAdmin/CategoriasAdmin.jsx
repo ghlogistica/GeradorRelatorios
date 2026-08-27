@@ -111,7 +111,7 @@ export default function CategoriasAdmin() {
                   type="text" 
                   value={formData.nome} 
                   onChange={e => setFormData({...formData, nome: e.target.value})} 
-                  placeholder="Ex: Etiqueta Armazém"
+                  placeholder="Ex: Documento Armazém"
                   required 
                 />
               </div>
@@ -120,7 +120,7 @@ export default function CategoriasAdmin() {
                 <textarea 
                   value={formData.descricao} 
                   onChange={e => setFormData({...formData, descricao: e.target.value})} 
-                  placeholder="Ex: Etiquetas usadas para controle de estoque interno"
+                  placeholder="Ex: Modelos usados para controle de estoque interno"
                   rows="3"
                 ></textarea>
               </div>
