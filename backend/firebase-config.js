@@ -9,7 +9,8 @@ let db;
 try {
   const serviceAccountPath = path.join(__dirname, 'geradorrelatorios-c53bb-firebase-adminsdk-fbsvc-5f6329d11c.json');
   
-  if (fs.existsSync(serviceAccountPath)) {
+  // Ignora o JSON local se estiver rodando no Cloud Run (variável K_SERVICE existe)
+  if (fs.existsSync(serviceAccountPath) && !process.env.K_SERVICE) {
     console.log('📄 Usando chave de serviço JSON local para o Firebase...');
     const serviceAccount = require(serviceAccountPath);
     app = initializeApp({
