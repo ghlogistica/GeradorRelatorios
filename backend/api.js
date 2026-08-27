@@ -75,6 +75,11 @@ router.post('/gerar-documento', async (req, res) => {
             const { conexao_id, nome_alias_tabela, query_sql } = queryRow;
 
             // 2.1 Buscar dados da conexao no Firestore
+            if (!conexao_id) {
+                console.warn(`[AVISO] Query '${nome_alias_tabela}' não possui conexao_id atrelado. Ignorando.`);
+                continue;
+            }
+
             const conexaoDoc = await db.collection('conexoes_banco').doc(conexao_id).get();
             
             if (!conexaoDoc.exists) {

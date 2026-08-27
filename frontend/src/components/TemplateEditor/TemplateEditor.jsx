@@ -543,6 +543,7 @@ export default function TemplateEditor() {
                     width: el.largura ? `${el.largura}px` : 'auto',
                     height: el.altura ? `${el.altura}px` : 'auto',
                     fontFamily: el.fonte,
+                    fontWeight: el.negrito ? 'bold' : 'normal',
                     fontSize: `${el.tamanho_fonte}px`,
                     backgroundColor: el.tipo_elemento === 'texto' 
                       ? (el.fundo_transparente ? 'transparent' : (el.cor_fundo || 'rgba(255, 255, 255, 0.95)')) 
@@ -624,6 +625,19 @@ export default function TemplateEditor() {
                   onChange={(e) => atualizarElementoCanvas('tamanho_fonte', parseInt(e.target.value))}
                 />
               </div>
+
+              {elementoAtivo.tipo_elemento === 'texto' && (
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={elementoAtivo.negrito || false}
+                      onChange={(e) => atualizarElementoCanvas('negrito', e.target.checked)}
+                    />
+                    <strong>Negrito (Bold)</strong>
+                  </label>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <div className="form-group" style={{ flex: 1 }}>
