@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+import { useParams } from 'react-router-dom';
 import './TemplateEditor.css';
 
 export default function TemplateEditor() {
+  const { id } = useParams();
+  
   // 1. Configuração Geral
   const [nomeTemplate, setNomeTemplate] = useState('');
   const [tipoDocumento, setTipoDocumento] = useState('etiqueta');
@@ -67,6 +70,39 @@ export default function TemplateEditor() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [elementoSelecionado]);
+
+  // Carrega os dados do template se for edição
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchTemplateData = async () => {
+      try {
+        const res = await fetch(`/api/templates/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setNomeTemplate(data.nome || '');
+          setTipoDocumento(data.tipo_documento || 'etiqueta');
+          setCategoriaId(data.categoria_id || '');
+          if (data.configuracoes_impressao) setConfigFisica(data.configuracoes_impressao);
+          if (data.parametros_esperados) setCamposFiltro(data.parametros_esperados);
+          
+          if (data.queries && data.queries.length > 0) {
+            setQueries(data.queries);
+          }
+          
+          if (data.elementosCanvas && data.elementosCanvas.length > 0) {
+            setElementosCanvas(data.elementosCanvas);
+          }
+        } else {
+          console.error('Template não encontrado.');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar o template:', error);
+      }
+    };
+    
+    fetchTemplateData();
+  }, [id]);
 
   // --- Handlers para Inputs de Filtro ---
   const adicionarFiltro = () => {
@@ -234,6 +270,7 @@ export default function TemplateEditor() {
       return;
     }
     const payload = { 
+      id,
       nomeTemplate, 
       tipo_documento: tipoDocumento,
       categoria_id: categoriaId,

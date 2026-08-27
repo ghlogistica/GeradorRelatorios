@@ -306,7 +306,7 @@ router.get('/templates', async (req, res) => {
 
 /**
  * POST /api/templates
- * Recebe o payload do frontend para salvar o modelo no Firestore.
+ * Recebe o payload do frontend para salvar ou atualizar o modelo no Firestore.
  */
 router.post('/templates', async (req, res) => {
     try {
@@ -314,23 +314,94 @@ router.post('/templates', async (req, res) => {
         console.log(`[API] Solicitando salvamento do template: ${payload.nomeTemplate}`);
         
         // Estrutura expandida suportando A4 e parâmetros dinâmicos
-        const novoTemplate = {
+        const templateData = {
             nome: payload.nomeTemplate,
-            data_criacao: new Date().toISOString(),
+            data_atualizacao: new Date().toISOString(),
             tipo_documento: payload.tipo_documento || 'etiqueta',
             configuracoes_impressao: payload.configuracoes_impressao || {},
             parametros_esperados: payload.parametros_esperados || [],
             categoria_id: payload.categoria_id || null
         };
         
-        const docRef = await db.collection('templates').add(novoTemplate);
-        const templateCriado = { id: docRef.id, ...novoTemplate };
+        let templateId = payload.id;
+
+        if (templateId) {
+            await db.collection('templates').doc(templateId).update(templateData);
+            
+            // Delete old queries and elements
+            const oldQueries = await db.collection('templates_queries').where('template_id', '==', templateId).get();
+            const batch = db.batch();
+            oldQueries.docs.forEach(doc => batch.delete(doc.ref));
+            
+            const oldElements = await db.collection('elementos_layout').where('template_id', '==', templateId).get();
+            oldElements.docs.forEach(doc => batch.delete(doc.ref));
+            
+            await batch.commit();
+        } else {
+            templateData.data_criacao = new Date().toISOString();
+            const docRef = await db.collection('templates').add(templateData);
+            templateId = docRef.id;
+        }
+
+        // Save queries
+        if (payload.queries && Array.isArray(payload.queries)) {
+            const batchQueries = db.batch();
+            for (const q of payload.queries) {
+                const queryRef = db.collection('templates_queries').doc();
+                batchQueries.set(queryRef, {
+                    ...q,
+                    template_id: templateId
+                });
+            }
+            await batchQueries.commit();
+        }
+
+        // Save elements
+        if (payload.elementosCanvas && Array.isArray(payload.elementosCanvas)) {
+            const batchElements = db.batch();
+            for (const el of payload.elementosCanvas) {
+                const elRef = db.collection('elementos_layout').doc();
+                batchElements.set(elRef, {
+                    ...el,
+                    template_id: templateId
+                });
+            }
+            await batchElements.commit();
+        }
         
         console.log('[API] Modelo salvo com sucesso no Firestore!');
-        return res.status(200).json({ success: true, message: 'Modelo salvo com sucesso.', template: templateCriado });
+        return res.status(200).json({ success: true, message: 'Modelo salvo com sucesso.', templateId });
     } catch (error) {
         console.error('Erro ao salvar template:', error);
         return res.status(500).json({ error: 'Erro interno ao salvar template no Firebase.' });
+    }
+});
+
+/**
+ * GET /api/templates/:id
+ * Retorna um template específico com suas queries e elementos
+ */
+router.get('/templates/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const templateDoc = await db.collection('templates').doc(id).get();
+        
+        if (!templateDoc.exists) {
+            return res.status(404).json({ error: 'Template não encontrado.' });
+        }
+        
+        const template = { id: templateDoc.id, ...templateDoc.data() };
+        
+        const queriesSnapshot = await db.collection('templates_queries').where('template_id', '==', id).get();
+        template.queries = queriesSnapshot.docs.map(doc => doc.data());
+        
+        const elementosSnapshot = await db.collection('elementos_layout').where('template_id', '==', id).get();
+        template.elementosCanvas = elementosSnapshot.docs.map(doc => doc.data());
+        
+        return res.status(200).json(template);
+    } catch (error) {
+        console.error('Erro ao buscar template:', error);
+        return res.status(500).json({ error: 'Erro interno ao buscar template.' });
     }
 });
 
