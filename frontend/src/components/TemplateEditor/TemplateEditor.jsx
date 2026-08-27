@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import './TemplateEditor.css';
 
 export default function TemplateEditor() {
@@ -8,9 +10,10 @@ export default function TemplateEditor() {
   const [queries, setQueries] = useState([{ id: Date.now(), conexao_id: '1', nome_alias_tabela: 'QueryPrincipal', query_sql: '' }]);
   const [configFisica, setConfigFisica] = useState({
     largura: 10,
-    altura: 15,
-    orientacao: 'retrato',
-    margem: 0.5
+    altura: 10,
+    orientacao: 'paisagem',
+    margem: 0,
+    imagem_fundo: null
   });
 
   // 2. Inputs do Usuário
@@ -99,6 +102,28 @@ export default function TemplateEditor() {
 
     setLoadingIA(true);
     try {
+      // Cria imagem de fundo para o Canvas
+      if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        const base64 = canvas.toDataURL('image/jpeg', 0.8);
+        setConfigFisica(prev => ({ ...prev, imagem_fundo: base64 }));
+      } else if (file.type.startsWith('image/')) {
+        const base64 = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+        setConfigFisica(prev => ({ ...prev, imagem_fundo: base64 }));
+      }
+
       const formData = new FormData();
       formData.append('imagem', file);
 
@@ -339,6 +364,10 @@ export default function TemplateEditor() {
               style={{
                 width: `${(configFisica.orientacao === 'retrato' ? configFisica.largura : configFisica.altura) * 37.8}px`,
                 height: `${(configFisica.orientacao === 'retrato' ? configFisica.altura : configFisica.largura) * 37.8}px`,
+                backgroundImage: configFisica.imagem_fundo ? `url(${configFisica.imagem_fundo})` : 'none',
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat',
+                position: 'relative'
               }}
             >
               {/* Margin overlay visual */}
@@ -369,7 +398,10 @@ export default function TemplateEditor() {
                     left: `${el.posicao_x}px`, 
                     top: `${el.posicao_y}px`,
                     fontFamily: el.fonte,
-                    fontSize: `${el.tamanho_fonte}px`
+                    fontSize: `${el.tamanho_fonte}px`,
+                    backgroundColor: el.cor_fundo || 'rgba(255, 255, 255, 0.95)',
+                    padding: '2px',
+                    border: '1px dotted rgba(0,0,0,0.1)'
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
