@@ -141,6 +141,10 @@ export default function TemplateEditor() {
 
     // Constrains (Limites das Margens)
     // Subtrai um offset aproximado para o próprio tamanho do elemento (ex: 50px) para não cortar na borda direita/inferior
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
     let boundedX = Math.max(margemPx, Math.min(x, canvasWidthPx - margemPx - 50));
     let boundedY = Math.max(margemPx, Math.min(y, canvasHeightPx - margemPx - 20));
 
@@ -287,7 +291,7 @@ export default function TemplateEditor() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('Modelo salvo com sucesso (Simulado)!');
+        alert('Modelo salvo com sucesso!');
       } else {
         alert('Erro ao salvar o modelo: ' + data.error);
       }
