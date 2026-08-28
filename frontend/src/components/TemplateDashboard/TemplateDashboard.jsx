@@ -38,8 +38,16 @@ export default function TemplateDashboard() {
   };
 
   const executeDelete = async () => {
-    // await fetch(`/api/templates/${templateToDelete.id}`, { method: 'DELETE' });
-    setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+    try {
+      const res = await fetch(`/api/templates/${templateToDelete.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setTemplates(templates.filter(t => t.id !== templateToDelete.id));
+      } else {
+        alert('Erro ao excluir o modelo no servidor.');
+      }
+    } catch (e) {
+      alert('Erro de comunicação.');
+    }
     setShowConfirm(false);
     setTemplateToDelete(null);
   };

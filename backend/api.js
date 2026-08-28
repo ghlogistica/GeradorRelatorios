@@ -458,6 +458,33 @@ router.get('/templates/:id', async (req, res) => {
     }
 });
 
+/**
+ * DELETE /api/templates/:id
+ * Exclui um template e todos os seus elementos e queries associados.
+ */
+router.delete('/templates/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        await db.collection('templates').doc(id).delete();
+        
+        const batch = db.batch();
+        
+        const queries = await db.collection('templates_queries').where('template_id', '==', id).get();
+        queries.docs.forEach(doc => batch.delete(doc.ref));
+        
+        const elementos = await db.collection('elementos_layout').where('template_id', '==', id).get();
+        elementos.docs.forEach(doc => batch.delete(doc.ref));
+        
+        await batch.commit();
+        
+        return res.status(200).json({ success: true, message: 'Template excluído com sucesso.' });
+    } catch (error) {
+        console.error('Erro ao excluir template:', error);
+        return res.status(500).json({ error: 'Erro interno ao excluir template no Firebase.' });
+    }
+});
+
 // --- ROTAS PARA CATEGORIAS ---
 
 // Listar Categorias (GET)
