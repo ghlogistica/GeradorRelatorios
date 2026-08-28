@@ -644,7 +644,7 @@ export default function TemplateEditor() {
                     outline: elementoSelecionado === el.id ? '1px dashed #0d6efd' : 'none',
                     cursor: draggingId === el.id ? 'grabbing' : 'grab',
                     userSelect: 'none',
-                    zIndex: elementoSelecionado === el.id ? 100 : 10
+                    zIndex: (el.z_index !== undefined ? el.z_index : 10) + (elementoSelecionado === el.id ? 1000 : 0)
                   }}
                 >
                   {el.tipo_elemento === 'codigo_barras' && '||||||||||||||||'}
@@ -701,6 +701,31 @@ export default function TemplateEditor() {
               <div className="form-group">
                 <label>Tipo de Elemento</label>
                 <input type="text" disabled value={elementoAtivo.tipo_elemento} />
+              </div>
+
+              <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <label>Camada (Fundo / Frente)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button 
+                    className="btn-secondary"
+                    style={{ padding: '2px 10px', fontSize: '16px' }}
+                    onClick={() => atualizarElementoCanvas('z_index', (elementoAtivo.z_index !== undefined ? elementoAtivo.z_index : 10) - 1)}
+                    title="Enviar para Trás"
+                  >
+                    -
+                  </button>
+                  <span style={{ fontWeight: 'bold', minWidth: '30px', textAlign: 'center' }}>
+                    {elementoAtivo.z_index !== undefined ? elementoAtivo.z_index : 10}
+                  </span>
+                  <button 
+                    className="btn-secondary"
+                    style={{ padding: '2px 10px', fontSize: '16px' }}
+                    onClick={() => atualizarElementoCanvas('z_index', (elementoAtivo.z_index !== undefined ? elementoAtivo.z_index : 10) + 1)}
+                    title="Trazer para Frente"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               
               <div className="form-group">
