@@ -72,6 +72,8 @@ export default function TemplateEditor() {
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
           const file = items[i].getAsFile();
+          if (!file) continue; // Verifica se realmente conseguiu pegar um arquivo
+
           const reader = new FileReader();
           reader.onload = (event) => {
             const base64Image = event.target.result;
@@ -98,7 +100,7 @@ export default function TemplateEditor() {
             setElementoSelecionado(novoElemento.id);
           };
           reader.readAsDataURL(file);
-          break; // Pega apenas a primeira imagem colada
+          break; // Pega apenas a primeira imagem válida colada
         }
       }
     };
