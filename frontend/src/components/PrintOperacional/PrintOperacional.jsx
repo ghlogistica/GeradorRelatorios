@@ -88,6 +88,38 @@ export default function PrintOperacional() {
     setManualInputs(prev => ({ ...prev, [id]: value }));
   };
 
+  const handleManualInputBlur = (el) => {
+    let value = manualInputs[el.id] || '';
+    if (!value.trim()) return;
+
+    if (el.mascara_dados === 'financeiro') {
+      value = value.replace(/[^\d,.-]/g, '');
+      if (!value.includes(',')) {
+        value = value + ',00';
+      } else {
+        const parts = value.split(',');
+        if (parts[1].length === 0) value = value + '00';
+        else if (parts[1].length === 1) value = value + '0';
+      }
+    } else if (el.mascara_dados === 'percentual') {
+      let numVal = value.replace(/[^\d,.-]/g, '');
+      if (numVal) {
+        if (!numVal.includes(',')) {
+          numVal = numVal + ',00';
+        } else {
+          const parts = numVal.split(',');
+          if (parts[1].length === 0) numVal = numVal + '00';
+          else if (parts[1].length === 1) numVal = numVal + '0';
+        }
+        value = numVal + '%';
+      }
+    }
+    
+    if (value !== manualInputs[el.id]) {
+      setManualInputs(prev => ({ ...prev, [el.id]: value }));
+    }
+  };
+
   // 3. Submeter formulário para a API Real
   const handleImprimir = async (e) => {
     e.preventDefault();
@@ -483,6 +515,7 @@ export default function PrintOperacional() {
                     style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}
                     value={manualInputs[el.id] || ''}
                     onChange={(e) => handleManualInputChange(el.id, e.target.value)}
+                    onBlur={() => handleManualInputBlur(el)}
                     required={!el.is_opcional}
                   />
                 </div>

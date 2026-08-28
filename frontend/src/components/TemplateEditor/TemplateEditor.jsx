@@ -907,15 +907,28 @@ export default function TemplateEditor() {
                     </label>
                   </div>
                   {elementoAtivo.solicitar_manual_se_vazio && (
-                    <div className="form-group">
-                      <label>Texto da Pergunta (Label)</label>
-                      <input 
-                        type="text" 
-                        value={elementoAtivo.label_manual || ''}
-                        onChange={(e) => atualizarElementoCanvas('label_manual', e.target.value)}
-                        placeholder="Ex: Digite o Nome do Motorista"
-                      />
-                    </div>
+                    <>
+                      <div className="form-group">
+                        <label>Texto da Pergunta (Label)</label>
+                        <input 
+                          type="text" 
+                          value={elementoAtivo.label_manual || ''}
+                          onChange={(e) => atualizarElementoCanvas('label_manual', e.target.value)}
+                          placeholder="Ex: Digite o Nome do Motorista"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Máscara de Dados</label>
+                        <select
+                          value={elementoAtivo.mascara_dados || 'livre'}
+                          onChange={(e) => atualizarElementoCanvas('mascara_dados', e.target.value)}
+                        >
+                          <option value="livre">Livre (Padrão)</option>
+                          <option value="financeiro">Financeiro (Forçar ,00)</option>
+                          <option value="percentual">Percentual (Forçar ,00%)</option>
+                        </select>
+                      </div>
+                    </>
                   )}
                 </>
               )}
