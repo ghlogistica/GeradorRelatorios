@@ -263,24 +263,42 @@ export default function PrintOperacional() {
           }
         }
         else if (el.tipo_elemento === 'caixa') {
-          doc.setDrawColor(el.cor_borda || '#000000');
-          doc.setLineWidth(el.espessura_borda || 1);
+          const isBorderTransparent = !el.cor_borda || el.cor_borda === 'transparent';
+          const isBgTransparent = !el.cor_fundo || el.cor_fundo === 'transparent';
           
-          // Se a caixa for muito fina (altura muito pequena), desenhar como uma linha sólida (F) 
-          // para evitar que o jsPDF desenhe a borda superior e inferior separadas, criando 'linhas duplas'
+          if (isBorderTransparent && isBgTransparent) {
+            return; // Nada para desenhar
+          }
+
+          // Se a caixa for muito fina (altura muito pequena), tratamos como linha para evitar 'linhas duplas'
           if (el.altura < 4) {
-             doc.setFillColor(el.cor_borda || '#000000');
-             doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
+             if (!isBgTransparent) {
+               doc.setFillColor(el.cor_fundo);
+               doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
+             } else if (!isBorderTransparent) {
+               doc.setFillColor(el.cor_borda);
+               doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
+             }
           } else {
-            if (el.cor_fundo && el.cor_fundo !== 'transparent') {
+            if (!isBorderTransparent && !isBgTransparent) {
+              doc.setDrawColor(el.cor_borda);
+              doc.setLineWidth(el.espessura_borda || 1);
               doc.setFillColor(el.cor_fundo);
               doc.rect(x, y, el.largura || 100, el.altura || 50, 'FD');
-            } else {
+            } else if (!isBorderTransparent) {
+              doc.setDrawColor(el.cor_borda);
+              doc.setLineWidth(el.espessura_borda || 1);
               doc.rect(x, y, el.largura || 100, el.altura || 50, 'D');
+            } else if (!isBgTransparent) {
+              doc.setFillColor(el.cor_fundo);
+              doc.rect(x, y, el.largura || 100, el.altura || 50, 'F');
             }
           }
         }
         else if (el.tipo_elemento === 'linha') {
+          if (!el.cor_borda || el.cor_borda === 'transparent') {
+            return; // Linha invisível
+          }
           doc.setFillColor(el.cor_borda || '#000000');
           // No HTML, a linha é uma div com width e height (background). Usamos rect preenchido para ficar idêntico.
           doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
