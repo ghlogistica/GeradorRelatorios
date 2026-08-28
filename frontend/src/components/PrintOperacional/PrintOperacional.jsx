@@ -74,7 +74,7 @@ export default function PrintOperacional() {
     const initialData = {};
     parametros.forEach(c => initialData[c.nome_campo] = '');
     setFormData(initialData);
-    setResultadoPreview(null);
+    setDocumentoGerado(null);
     setPendingDocument(null);
   }, [templateSelecionado, templates]);
 
