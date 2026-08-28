@@ -56,17 +56,22 @@ export default function TemplateEditor() {
       }
     };
 
-    const fetchCategorias = async () => {
+    const fetchDados = async () => {
       try {
-        const res = await fetch('/api/categorias');
-        const data = await res.json();
-        setCategorias(data);
+        const [resCat, resConn] = await Promise.all([
+          fetch('/api/categorias'),
+          fetch('/api/conexoes_banco')
+        ]);
+        const dataCat = await resCat.json();
+        const dataConn = await resConn.json();
+        setCategorias(dataCat);
+        setConexoes(dataConn);
       } catch (e) {
-        console.error(e);
+        console.error('Erro ao buscar dados:', e);
       }
     };
 
-    fetchCategorias();
+    fetchDados();
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [elementoSelecionado]);
