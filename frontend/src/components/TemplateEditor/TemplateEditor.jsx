@@ -46,7 +46,7 @@ export default function TemplateEditor() {
   // 5. IA Generation
   const [loadingIA, setLoadingIA] = useState(false);
 
-  // --- Atalhos de Teclado ---
+  // --- Atalhos de Teclado e Colar Imagens ---
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ignora se o usuário estiver digitando em um input, textarea ou select
@@ -57,6 +57,49 @@ export default function TemplateEditor() {
       if (e.key === 'Delete' && elementoSelecionado) {
         setElementosCanvas(prev => prev.filter(el => el.id !== elementoSelecionado));
         setElementoSelecionado(null);
+      }
+    };
+
+    const handlePaste = (e) => {
+      // Ignora se o usuário estiver focado em um input
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64Image = event.target.result;
+            const novoElemento = {
+              id: Date.now(),
+              tipo_elemento: 'imagem',
+              posicao_x: 20,
+              posicao_y: 20,
+              largura: 200,
+              altura: 200,
+              url_imagem: base64Image,
+              fonte: 'Arial',
+              tamanho_fonte: 14,
+              fonte_dados: 'Estatico',
+              coluna_banco: '',
+              valor_estatico: '',
+              fundo_transparente: false,
+              solicitar_manual_se_vazio: false,
+              label_manual: '',
+              is_opcional: false,
+              regra_condicional: ''
+            };
+            setElementosCanvas(prev => [...prev, novoElemento]);
+            setElementoSelecionado(novoElemento.id);
+          };
+          reader.readAsDataURL(file);
+          break; // Pega apenas a primeira imagem colada
+        }
       }
     };
 
@@ -77,7 +120,11 @@ export default function TemplateEditor() {
 
     fetchDados();
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handlePaste);
+    };
   }, [elementoSelecionado]);
 
   // Carrega os dados do template se for edição

@@ -32,6 +32,48 @@ export default function TemplateDashboard() {
     navigate(`/editor/${id}`);
   };
 
+  const handleClone = async (id) => {
+    try {
+      // 1. Buscar o template original
+      const res = await fetch(`/api/templates/${id}`);
+      if (!res.ok) {
+        alert('Erro ao buscar o modelo para clonar.');
+        return;
+      }
+      const template = await res.json();
+
+      // 2. Montar o payload para salvar como novo (sem ID)
+      const payload = {
+        nomeTemplate: template.nome + ' - Cópia',
+        tipo_documento: template.tipo_documento,
+        configuracoes_impressao: template.configuracoes_impressao,
+        parametros_esperados: template.parametros_esperados,
+        categoria_id: template.categoria_id,
+        queries: template.queries,
+        elementosCanvas: template.elementosCanvas
+      };
+
+      // 3. Salvar como novo template
+      const cloneRes = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (cloneRes.ok) {
+        // Atualiza a lista
+        const fetchRes = await fetch('/api/templates');
+        const data = await fetchRes.json();
+        setTemplates(data);
+      } else {
+        alert('Erro ao criar a cópia do modelo.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erro de comunicação ao clonar modelo.');
+    }
+  };
+
   const confirmDelete = (template) => {
     setTemplateToDelete(template);
     setShowConfirm(true);
@@ -73,8 +115,9 @@ export default function TemplateDashboard() {
               <td>{tpl.nome}</td>
               <td>{new Date(tpl.data_criacao).toLocaleDateString()}</td>
               <td>
-                <button className="btn-icon edit" onClick={() => handleEdit(tpl.id)}>✏️</button>
-                <button className="btn-icon delete" onClick={() => confirmDelete(tpl)}>🗑️</button>
+                <button className="btn-icon edit" onClick={() => handleEdit(tpl.id)} title="Editar">✏️</button>
+                <button className="btn-icon clone" onClick={() => handleClone(tpl.id)} title="Clonar">📄</button>
+                <button className="btn-icon delete" onClick={() => confirmDelete(tpl)} title="Excluir">🗑️</button>
               </td>
             </tr>
           ))}
