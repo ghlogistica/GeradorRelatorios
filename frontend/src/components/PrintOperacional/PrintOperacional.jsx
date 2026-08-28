@@ -88,21 +88,20 @@ export default function PrintOperacional() {
     setManualInputs(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleManualInputBlur = (el) => {
-    let value = manualInputs[el.id] || '';
-    if (!value.trim()) return;
-
-    if (el.mascara_dados === 'financeiro') {
-      value = value.replace(/[^\d,.-]/g, '');
-      if (!value.includes(',')) {
-        value = value + ',00';
+  const formatarMascara = (value, tipoMascara) => {
+    if (!value || !value.trim()) return value;
+    let newValue = value;
+    if (tipoMascara === 'financeiro') {
+      newValue = newValue.replace(/[^\d,.-]/g, '');
+      if (!newValue.includes(',')) {
+        newValue = newValue + ',00';
       } else {
-        const parts = value.split(',');
-        if (parts[1].length === 0) value = value + '00';
-        else if (parts[1].length === 1) value = value + '0';
+        const parts = newValue.split(',');
+        if (parts[1].length === 0) newValue = newValue + '00';
+        else if (parts[1].length === 1) newValue = newValue + '0';
       }
-    } else if (el.mascara_dados === 'percentual') {
-      let numVal = value.replace(/[^\d,.-]/g, '');
+    } else if (tipoMascara === 'percentual') {
+      let numVal = newValue.replace(/[^\d,.-]/g, '');
       if (numVal) {
         if (!numVal.includes(',')) {
           numVal = numVal + ',00';
@@ -111,12 +110,20 @@ export default function PrintOperacional() {
           if (parts[1].length === 0) numVal = numVal + '00';
           else if (parts[1].length === 1) numVal = numVal + '0';
         }
-        value = numVal + '%';
+        newValue = numVal + '%';
       }
     }
+    return newValue;
+  };
+
+  const handleManualInputBlur = (el) => {
+    let value = manualInputs[el.id] || '';
+    if (!value.trim()) return;
+
+    const formatted = formatarMascara(value, el.mascara_dados);
     
-    if (value !== manualInputs[el.id]) {
-      setManualInputs(prev => ({ ...prev, [el.id]: value }));
+    if (formatted !== manualInputs[el.id]) {
+      setManualInputs(prev => ({ ...prev, [el.id]: formatted }));
     }
   };
 
@@ -577,6 +584,17 @@ export default function PrintOperacional() {
                         if (elIndex > -1) {
                           novoDoc.elementos_finais[elIndex].valor_resolvido = e.target.value;
                           setDocumentoGerado(novoDoc);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const formatted = formatarMascara(e.target.value, el.mascara_dados);
+                        if (formatted !== e.target.value) {
+                          const novoDoc = JSON.parse(JSON.stringify(documentoGerado));
+                          const elIndex = novoDoc.elementos_finais.findIndex(item => item.id === el.id);
+                          if (elIndex > -1) {
+                            novoDoc.elementos_finais[elIndex].valor_resolvido = formatted;
+                            setDocumentoGerado(novoDoc);
+                          }
                         }
                       }}
                     />
