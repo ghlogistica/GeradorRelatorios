@@ -13,7 +13,7 @@ export default function PrintOperacional() {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
   
-  const [resultadoPreview, setResultadoPreview] = useState(null);
+  const [documentoGerado, setDocumentoGerado] = useState(null);
   
   // States para o Modal de Input Manual
   const [pendingDocument, setPendingDocument] = useState(null);
@@ -124,7 +124,7 @@ export default function PrintOperacional() {
   const handleImprimir = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setResultadoPreview(null);
+    setDocumentoGerado(null);
     setPendingDocument(null);
 
     try {
@@ -193,16 +193,7 @@ export default function PrintOperacional() {
   };
 
   const processarFinal = (json) => {
-    // Monta um objeto chave-valor amigável para o Preview Baseado nos textos do Canvas
-    const preview = {};
-    json.elementos_finais.forEach((el, index) => {
-      if (el.tipo_elemento === 'texto' || el.tipo_elemento === 'codigo_barras') {
-        const label = el.fonte_dados === 'Estatico' ? `Elemento ${index+1} (Estático)` : `${el.fonte_dados}.${el.coluna_banco}`;
-        preview[label] = el.valor_resolvido;
-      }
-    });
-    
-    setResultadoPreview(preview);
+    setDocumentoGerado(json);
     dispararImpressaoZebra(json);
   };
 
@@ -497,29 +488,46 @@ export default function PrintOperacional() {
             <p style={{marginBottom: '20px', color: '#64748b'}}>O sistema não encontrou as informações abaixo. Por favor, preencha manualmente para prosseguir com a impressão.</p>
             
             <form onSubmit={confirmarInputManual}>
-              {pendingDocument.elementos_finais
-                .filter(el => el.precisa_input_manual)
-                .sort((a, b) => {
-                  // Ordenação visual de leitura: De cima para baixo, e da esquerda para direita
-                  // Tolera até 15px de diferença no eixo Y para considerar que estão na mesma linha
-                  if (Math.abs((a.posicao_y || 0) - (b.posicao_y || 0)) > 15) {
-                    return (a.posicao_y || 0) - (b.posicao_y || 0);
-                  }
-                  return (a.posicao_x || 0) - (b.posicao_x || 0);
-                })
-                .map(el => (
-                <div className="form-group" key={el.id} style={{ marginBottom: '15px' }}>
-                  <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>{el.label_manual || 'Preenchimento Manual'}</label>
-                  <input 
-                    type="text" 
-                    style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}
-                    value={manualInputs[el.id] || ''}
-                    onChange={(e) => handleManualInputChange(el.id, e.target.value)}
-                    onBlur={() => handleManualInputBlur(el)}
-                    required={!el.is_opcional}
-                  />
-                </div>
-              ))}
+              {(() => {
+                const elementosManuais = pendingDocument.elementos_finais
+                  .filter(el => el.precisa_input_manual)
+                  .sort((a, b) => {
+                    // Ordenação visual de leitura: De cima para baixo, e da esquerda para direita
+                    // Tolera até 15px de diferença no eixo Y para considerar que estão na mesma linha
+                    if (Math.abs((a.posicao_y || 0) - (b.posicao_y || 0)) > 15) {
+                      return (a.posicao_y || 0) - (b.posicao_y || 0);
+                    }
+                    return (a.posicao_x || 0) - (b.posicao_x || 0);
+                  });
+                
+                return elementosManuais.map((el, index) => (
+                  <div className="form-group" key={el.id} style={{ marginBottom: '15px' }}>
+                    <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>{el.label_manual || 'Preenchimento Manual'}</label>
+                    <input 
+                      type="text" 
+                      style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}
+                      value={manualInputs[el.id] || ''}
+                      onChange={(e) => handleManualInputChange(el.id, e.target.value)}
+                      onBlur={() => handleManualInputBlur(el)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          if (index < elementosManuais.length - 1) {
+                            e.preventDefault(); // Impede o envio do form
+                            const form = e.target.form;
+                            const inputs = Array.from(form.querySelectorAll('input[type="text"]'));
+                            const currentIdx = inputs.indexOf(e.target);
+                            if (currentIdx > -1 && inputs[currentIdx + 1]) {
+                              inputs[currentIdx + 1].focus();
+                            }
+                          }
+                          // Se for o último elemento (index == length - 1), o default (submit) acontece
+                        }
+                      }}
+                      required={!el.is_opcional}
+                    />
+                  </div>
+                ));
+              })()}
               
               <div className="modal-actions" style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn-secondary" onClick={() => setPendingDocument(null)}>
@@ -535,18 +543,46 @@ export default function PrintOperacional() {
       )}
 
       {/* 4. Preview dos Dados Retornados */}
-      {resultadoPreview && (
+      {documentoGerado && (
         <div className="preview-card" style={{marginTop: '30px', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'}}>
-          <div className="preview-header" style={{backgroundColor: '#f8fafc', padding: '15px 20px', borderBottom: '1px solid #e2e8f0'}}>
-            <h3 style={{margin: 0, color: '#334155'}}>Textos a Serem Impressos (Preview)</h3>
+          <div className="preview-header" style={{backgroundColor: '#f8fafc', padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <h3 style={{margin: 0, color: '#334155'}}>Textos a Serem Impressos (Editável)</h3>
+            <button 
+              className="btn-primary" 
+              style={{backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'}}
+              onClick={() => dispararImpressaoZebra(documentoGerado)}
+            >
+              SALVAR ALTERAÇÕES E RE-IMPRIMIR
+            </button>
           </div>
           <div className="preview-body" style={{padding: '20px'}}>
-            {Object.entries(resultadoPreview).map(([key, val]) => (
-              <div className="preview-row" key={key} style={{display: 'flex', padding: '10px 0', borderBottom: '1px solid #f1f5f9'}}>
-                <strong style={{width: '40%', color: '#475569'}}>{key}:</strong>
-                <span style={{color: '#0f172a'}}>{val}</span>
-              </div>
-            ))}
+            <p style={{marginBottom: '15px', color: '#64748b', fontSize: '14px'}}>
+              Os valores abaixo foram resolvidos a partir do banco de dados ou da sua digitação manual. Se houver algum erro de digitação, você pode corrigir diretamente aqui e clicar no botão verde para gerar novamente.
+            </p>
+            {documentoGerado.elementos_finais.map((el, index) => {
+              if (el.tipo_elemento === 'texto' || el.tipo_elemento === 'codigo_barras') {
+                const label = el.fonte_dados === 'Estatico' ? `Elemento ${index+1} (Estático)` : `${el.fonte_dados}.${el.coluna_banco}`;
+                return (
+                  <div className="preview-row" key={el.id} style={{display: 'flex', padding: '10px 0', borderBottom: '1px solid #f1f5f9', alignItems: 'center'}}>
+                    <strong style={{width: '40%', color: '#475569'}}>{label}:</strong>
+                    <input
+                      type="text"
+                      style={{ flex: 1, padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                      value={el.valor_resolvido || ''}
+                      onChange={(e) => {
+                        const novoDoc = JSON.parse(JSON.stringify(documentoGerado));
+                        const elIndex = novoDoc.elementos_finais.findIndex(item => item.id === el.id);
+                        if (elIndex > -1) {
+                          novoDoc.elementos_finais[elIndex].valor_resolvido = e.target.value;
+                          setDocumentoGerado(novoDoc);
+                        }
+                      }}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })}
           </div>
         </div>
       )}
