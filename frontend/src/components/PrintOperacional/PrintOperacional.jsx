@@ -203,14 +203,25 @@ export default function PrintOperacional() {
         const y = el.posicao_y;
 
         if (el.tipo_elemento === 'texto') {
-          // Fallback seguro de fonte
-          const fonteValida = el.fonte && ['Arial', 'Helvetica', 'Times', 'Courier'].includes(el.fonte) ? el.fonte : 'Helvetica';
-          doc.setFont(fonteValida, el.negrito ? 'bold' : 'normal');
-          doc.setFontSize(el.tamanho_fonte || 14);
+          // Mapeamento seguro de fontes do navegador para o jsPDF
+          let fontePdf = 'helvetica'; // Fallback para Arial/Calibri
+          if (el.fonte === 'Times New Roman' || el.fonte === 'Times') fontePdf = 'times';
+          if (el.fonte === 'Courier New' || el.fonte === 'Courier') fontePdf = 'courier';
           
-          // jsPDF doc.text() desenha o texto baseado na baseline, então somamos 80% do tamanho da fonte ao Y
+          doc.setFont(fontePdf, el.negrito ? 'bold' : 'normal');
+          
+          // Conversão de tamanho: jsPDF usa 'pt' (pontos) para fonte. 1 px = 0.75 pt.
+          const fontSizePx = el.tamanho_fonte || 14;
+          doc.setFontSize(fontSizePx * 0.75);
+          
+          // O Y no HTML é o topo da div. No jsPDF doc.text(), o Y é a baseline.
+          // No TemplateEditor, o texto tem padding: 2px.
+          const padding = 2;
+          const ascentPx = fontSizePx * 0.8; // A baseline fica aprox a 80% da altura da fonte
+          const baselineY = y + padding + ascentPx;
+          
           doc.setTextColor(0, 0, 0); 
-          doc.text(String(el.valor_resolvido || ''), x, y + (el.tamanho_fonte || 14) * 0.8);
+          doc.text(String(el.valor_resolvido || ''), x + padding, baselineY);
         }
         else if (el.tipo_elemento === 'caixa') {
           doc.setDrawColor(el.cor_borda || '#000000');
