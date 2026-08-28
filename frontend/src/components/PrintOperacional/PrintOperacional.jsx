@@ -197,8 +197,14 @@ export default function PrintOperacional() {
       if (config.imagem_fundo) {
         doc.addImage(config.imagem_fundo, 'JPEG', 0, 0, widthPx, heightPx);
       }
+      // Ordenar por z_index para garantir que os elementos de fundo fiquem atrás e os da frente por cima
+      const elementosOrdenados = [...dados.elementos_finais].sort((a, b) => {
+        const zA = a.z_index !== undefined ? a.z_index : 10;
+        const zB = b.z_index !== undefined ? b.z_index : 10;
+        return zA - zB;
+      });
 
-      dados.elementos_finais.forEach(el => {
+      elementosOrdenados.forEach(el => {
         const x = el.posicao_x;
         const y = el.posicao_y;
 
@@ -267,9 +273,23 @@ export default function PrintOperacional() {
           }
         }
         else if (el.tipo_elemento === 'linha') {
-          doc.setDrawColor(el.cor_borda || '#000000');
-          doc.setLineWidth(el.altura || 2);
-          doc.line(x, y, x + (el.largura || 100), y);
+          doc.setFillColor(el.cor_borda || '#000000');
+          // No HTML, a linha é uma div com width e height (background). Usamos rect preenchido para ficar idêntico.
+          doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
+        }
+        else if (el.tipo_elemento === 'imagem') {
+          if (el.url_imagem) {
+            try {
+              // Tenta extrair o formato da string base64 se possível (ex: data:image/png;base64,...)
+              let format = 'JPEG';
+              if (el.url_imagem.startsWith('data:image/png')) format = 'PNG';
+              else if (el.url_imagem.startsWith('data:image/webp')) format = 'WEBP';
+              
+              doc.addImage(el.url_imagem, format, x, y, el.largura || 100, el.altura || 100);
+            } catch (err) {
+              console.error('Erro ao adicionar imagem ao PDF:', err);
+            }
+          }
         }
         else if (el.tipo_elemento === 'codigo_barras') {
           doc.setFont('Courier', 'bold');
