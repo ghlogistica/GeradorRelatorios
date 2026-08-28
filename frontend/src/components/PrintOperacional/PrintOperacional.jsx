@@ -560,7 +560,7 @@ export default function PrintOperacional() {
               Os valores abaixo foram resolvidos a partir do banco de dados ou da sua digitação manual. Se houver algum erro de digitação, você pode corrigir diretamente aqui e clicar no botão verde para gerar novamente.
             </p>
             {documentoGerado.elementos_finais.map((el, index) => {
-              if (el.tipo_elemento === 'texto' || el.tipo_elemento === 'codigo_barras') {
+              if ((el.tipo_elemento === 'texto' || el.tipo_elemento === 'codigo_barras') && el.solicitar_manual_se_vazio) {
                 const defaultLabel = el.fonte_dados === 'Estatico' ? `Elemento ${index+1} (Estático)` : `${el.fonte_dados}.${el.coluna_banco}`;
                 const label = el.label_manual || defaultLabel;
                 
