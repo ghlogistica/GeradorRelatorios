@@ -265,11 +265,19 @@ export default function PrintOperacional() {
         else if (el.tipo_elemento === 'caixa') {
           doc.setDrawColor(el.cor_borda || '#000000');
           doc.setLineWidth(el.espessura_borda || 1);
-          if (el.cor_fundo && el.cor_fundo !== 'transparent') {
-            doc.setFillColor(el.cor_fundo);
-            doc.rect(x, y, el.largura || 100, el.altura || 50, 'FD');
+          
+          // Se a caixa for muito fina (altura muito pequena), desenhar como uma linha sólida (F) 
+          // para evitar que o jsPDF desenhe a borda superior e inferior separadas, criando 'linhas duplas'
+          if (el.altura < 4) {
+             doc.setFillColor(el.cor_borda || '#000000');
+             doc.rect(x, y, el.largura || 100, el.altura || 2, 'F');
           } else {
-            doc.rect(x, y, el.largura || 100, el.altura || 50, 'D');
+            if (el.cor_fundo && el.cor_fundo !== 'transparent') {
+              doc.setFillColor(el.cor_fundo);
+              doc.rect(x, y, el.largura || 100, el.altura || 50, 'FD');
+            } else {
+              doc.rect(x, y, el.largura || 100, el.altura || 50, 'D');
+            }
           }
         }
         else if (el.tipo_elemento === 'linha') {
@@ -280,12 +288,34 @@ export default function PrintOperacional() {
         else if (el.tipo_elemento === 'imagem') {
           if (el.url_imagem) {
             try {
-              // Tenta extrair o formato da string base64 se possível (ex: data:image/png;base64,...)
               let format = 'JPEG';
               if (el.url_imagem.startsWith('data:image/png')) format = 'PNG';
               else if (el.url_imagem.startsWith('data:image/webp')) format = 'WEBP';
               
-              doc.addImage(el.url_imagem, format, x, y, el.largura || 100, el.altura || 100);
+              const imgProps = doc.getImageProperties(el.url_imagem);
+              const naturalRatio = imgProps.width / imgProps.height;
+              
+              const boxWidth = el.largura || 100;
+              const boxHeight = el.altura || 100;
+              const boxRatio = boxWidth / boxHeight;
+              
+              let drawWidth = boxWidth;
+              let drawHeight = boxHeight;
+              let drawX = x;
+              let drawY = y;
+              
+              // Simular 'object-fit: contain'
+              if (naturalRatio > boxRatio) {
+                // Imagem é mais larga que a caixa
+                drawHeight = boxWidth / naturalRatio;
+                drawY = y + (boxHeight - drawHeight) / 2;
+              } else {
+                // Imagem é mais alta que a caixa
+                drawWidth = boxHeight * naturalRatio;
+                drawX = x + (boxWidth - drawWidth) / 2;
+              }
+              
+              doc.addImage(el.url_imagem, format, drawX, drawY, drawWidth, drawHeight);
             } catch (err) {
               console.error('Erro ao adicionar imagem ao PDF:', err);
             }
