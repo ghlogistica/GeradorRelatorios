@@ -561,7 +561,9 @@ export default function PrintOperacional() {
             </p>
             {documentoGerado.elementos_finais.map((el, index) => {
               if (el.tipo_elemento === 'texto' || el.tipo_elemento === 'codigo_barras') {
-                const label = el.fonte_dados === 'Estatico' ? `Elemento ${index+1} (Estático)` : `${el.fonte_dados}.${el.coluna_banco}`;
+                const defaultLabel = el.fonte_dados === 'Estatico' ? `Elemento ${index+1} (Estático)` : `${el.fonte_dados}.${el.coluna_banco}`;
+                const label = el.label_manual || defaultLabel;
+                
                 return (
                   <div className="preview-row" key={el.id} style={{display: 'flex', padding: '10px 0', borderBottom: '1px solid #f1f5f9', alignItems: 'center'}}>
                     <strong style={{width: '40%', color: '#475569'}}>{label}:</strong>
