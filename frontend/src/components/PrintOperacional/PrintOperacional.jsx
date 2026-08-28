@@ -208,9 +208,6 @@ export default function PrintOperacional() {
           if (el.fonte === 'Times New Roman' || el.fonte === 'Times') fontePdf = 'times';
           if (el.fonte === 'Courier New' || el.fonte === 'Courier') fontePdf = 'courier';
           
-          doc.setFont(fontePdf, el.negrito ? 'bold' : 'normal');
-          
-          // Restaura o tamanho da fonte (sem o multiplicador 0.75) para voltar ao tamanho original aprovado
           const fontSizePx = el.tamanho_fonte || 14;
           doc.setFontSize(fontSizePx);
           
@@ -222,11 +219,26 @@ export default function PrintOperacional() {
           
           doc.setTextColor(0, 0, 0); 
           
+          let prefixWidth = 0;
+          let drawX = x + padding;
+          const drawY = y + padding + halfLeading;
+
+          // Processa o Prefixo primeiro (com formatação independente)
+          if (el.texto_prefixo) {
+            doc.setFont(fontePdf, el.prefixo_negrito ? 'bold' : 'normal');
+            doc.text(el.texto_prefixo, drawX, drawY, { baseline: 'top' });
+            prefixWidth = doc.getTextWidth(el.texto_prefixo);
+            drawX += prefixWidth;
+          }
+          
+          // Volta a fonte para a formatação do valor dinâmico
+          doc.setFont(fontePdf, el.negrito ? 'bold' : 'normal');
+          
           let textToPrint = String(el.valor_resolvido || '');
           
           if (el.quebra_linha && el.largura) {
-            // Divide o texto em múltiplas linhas respeitando a largura
-            const maxTextWidth = Math.max(10, el.largura - (padding * 2));
+            // Divide o texto em múltiplas linhas respeitando a largura restante (largura total - prefixo)
+            const maxTextWidth = Math.max(10, el.largura - (padding * 2) - prefixWidth);
             let textLines = doc.splitTextToSize(textToPrint, maxTextWidth);
             
             // Limita a quantidade de linhas baseada na altura máxima
@@ -238,10 +250,10 @@ export default function PrintOperacional() {
               }
             }
             
-            doc.text(textLines, x + padding, y + padding + halfLeading, { baseline: 'top' });
+            doc.text(textLines, drawX, drawY, { baseline: 'top' });
           } else {
             // Comportamento normal: uma única linha
-            doc.text(textToPrint, x + padding, y + padding + halfLeading, { baseline: 'top' });
+            doc.text(textToPrint, drawX, drawY, { baseline: 'top' });
           }
         }
         else if (el.tipo_elemento === 'caixa') {

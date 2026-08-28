@@ -551,7 +551,6 @@ export default function TemplateEditor() {
                     width: el.largura ? `${el.largura}px` : 'auto',
                     height: el.altura ? `${el.altura}px` : 'auto',
                     fontFamily: el.fonte,
-                    fontWeight: el.negrito ? 'bold' : 'normal',
                     fontSize: `${el.tamanho_fonte}px`,
                     whiteSpace: el.quebra_linha ? 'normal' : 'nowrap',
                     wordWrap: el.quebra_linha ? 'break-word' : 'normal',
@@ -568,7 +567,14 @@ export default function TemplateEditor() {
                 >
                   {el.tipo_elemento === 'codigo_barras' && '||||||||||||||||'}
                   {el.tipo_elemento === 'qrcode' && '[ QR ]'}
-                  {el.tipo_elemento === 'texto' && (el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.coluna_banco || 'Coluna'}]`)}
+                  {el.tipo_elemento === 'texto' && (
+                    <>
+                      {el.texto_prefixo && <span style={{ fontWeight: el.prefixo_negrito ? 'bold' : 'normal', whiteSpace: 'pre-wrap' }}>{el.texto_prefixo}</span>}
+                      <span style={{ fontWeight: el.negrito ? 'bold' : 'normal' }}>
+                        {el.fonte_dados === 'Estatico' ? el.valor_estatico : `[${el.coluna_banco || 'Coluna'}]`}
+                      </span>
+                    </>
+                  )}
                   {el.tipo_elemento === 'caixa' && <div style={{width:'100%', height:'100%', border: `${el.espessura_borda || 1}px solid ${el.cor_borda || '#000'}`, backgroundColor: el.cor_fundo || 'transparent'}}></div>}
                   {el.tipo_elemento === 'linha' && <div style={{width:'100%', height:'100%', backgroundColor: el.cor_borda || '#000'}}></div>}
                   {el.tipo_elemento === 'imagem' && (el.url_imagem ? <img src={el.url_imagem} style={{width:'100%', height:'100%', objectFit:'contain'}} alt="Elemento"/> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', backgroundColor:'#eee', border:'1px dashed #ccc'}}>[ IMAGEM ]</div>)}
@@ -638,16 +644,38 @@ export default function TemplateEditor() {
               </div>
 
               {elementoAtivo.tipo_elemento === 'texto' && (
-                <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <>
+                  <div className="form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={elementoAtivo.negrito || false}
+                        onChange={(e) => atualizarElementoCanvas('negrito', e.target.checked)}
+                      />
+                      <strong>Valor Dinâmico em Negrito</strong>
+                    </label>
+                  </div>
+                  <hr style={{ margin: '10px 0', border: 'none', borderTop: '1px solid #eee' }} />
+                  <div className="form-group">
+                    <label>Texto do Prefixo (Rótulo Estático)</label>
                     <input 
-                      type="checkbox" 
-                      checked={elementoAtivo.negrito || false}
-                      onChange={(e) => atualizarElementoCanvas('negrito', e.target.checked)}
+                      type="text" 
+                      value={elementoAtivo.texto_prefixo || ''}
+                      onChange={(e) => atualizarElementoCanvas('texto_prefixo', e.target.value)}
+                      placeholder="Ex: PLACA CAVALO: "
                     />
-                    <strong>Negrito (Bold)</strong>
-                  </label>
-                </div>
+                  </div>
+                  <div className="form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={elementoAtivo.prefixo_negrito || false}
+                        onChange={(e) => atualizarElementoCanvas('prefixo_negrito', e.target.checked)}
+                      />
+                      <strong>Prefixo em Negrito</strong>
+                    </label>
+                  </div>
+                </>
               )}
 
               <div style={{ display: 'flex', gap: '8px' }}>
