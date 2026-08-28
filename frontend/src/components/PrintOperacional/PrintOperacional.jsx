@@ -405,7 +405,7 @@ export default function PrintOperacional() {
                     style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px'}}
                     value={manualInputs[el.id] || ''}
                     onChange={(e) => handleManualInputChange(el.id, e.target.value)}
-                    required
+                    required={!el.is_opcional}
                   />
                 </div>
               ))}
