@@ -210,18 +210,19 @@ export default function PrintOperacional() {
           
           doc.setFont(fontePdf, el.negrito ? 'bold' : 'normal');
           
-          // Conversão de tamanho: jsPDF usa 'pt' (pontos) para fonte. 1 px = 0.75 pt.
+          // Restaura o tamanho da fonte (sem o multiplicador 0.75) para voltar ao tamanho original aprovado
           const fontSizePx = el.tamanho_fonte || 14;
-          doc.setFontSize(fontSizePx * 0.75);
+          doc.setFontSize(fontSizePx);
           
-          // O Y no HTML é o topo da div. No jsPDF doc.text(), o Y é a baseline.
-          // No TemplateEditor, o texto tem padding: 2px.
+          // O Y no HTML é o topo da div. A div tem 2px de padding.
+          // Além disso, o navegador aplica um 'line-height' (altura de linha) que cria um espaço
+          // em branco (half-leading) acima da letra, empurrando-a visualmente para baixo.
           const padding = 2;
-          const ascentPx = fontSizePx * 0.8; // A baseline fica aprox a 80% da altura da fonte
-          const baselineY = y + padding + ascentPx;
+          const halfLeading = fontSizePx * 0.15; // Aprox 15% do tamanho da fonte é espaço em branco no topo
           
           doc.setTextColor(0, 0, 0); 
-          doc.text(String(el.valor_resolvido || ''), x + padding, baselineY);
+          // baseline: 'top' manda o PDF desenhar contando do teto para baixo (igual a Web)
+          doc.text(String(el.valor_resolvido || ''), x + padding, y + padding + halfLeading, { baseline: 'top' });
         }
         else if (el.tipo_elemento === 'caixa') {
           doc.setDrawColor(el.cor_borda || '#000000');
