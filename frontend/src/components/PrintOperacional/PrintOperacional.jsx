@@ -375,7 +375,17 @@ export default function PrintOperacional() {
             <p style={{marginBottom: '20px', color: '#64748b'}}>O sistema não encontrou as informações abaixo. Por favor, preencha manualmente para prosseguir com a impressão.</p>
             
             <form onSubmit={confirmarInputManual}>
-              {pendingDocument.elementos_finais.filter(el => el.precisa_input_manual).map(el => (
+              {pendingDocument.elementos_finais
+                .filter(el => el.precisa_input_manual)
+                .sort((a, b) => {
+                  // Ordenação visual de leitura: De cima para baixo, e da esquerda para direita
+                  // Tolera até 15px de diferença no eixo Y para considerar que estão na mesma linha
+                  if (Math.abs((a.posicao_y || 0) - (b.posicao_y || 0)) > 15) {
+                    return (a.posicao_y || 0) - (b.posicao_y || 0);
+                  }
+                  return (a.posicao_x || 0) - (b.posicao_x || 0);
+                })
+                .map(el => (
                 <div className="form-group" key={el.id} style={{ marginBottom: '15px' }}>
                   <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>{el.label_manual || 'Preenchimento Manual'}</label>
                   <input 
