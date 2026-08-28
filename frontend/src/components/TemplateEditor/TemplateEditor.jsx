@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import './TemplateEditor.css';
 
 export default function TemplateEditor() {
   const { id } = useParams();
+  const navigate = useNavigate();
   
   // 1. Configuração Geral
   const [nomeTemplate, setNomeTemplate] = useState('');
@@ -300,6 +301,10 @@ export default function TemplateEditor() {
       const data = await res.json();
       if (data.success) {
         alert('Modelo salvo com sucesso!');
+        if (!id && data.templateId) {
+          // Atualiza a URL para o modo de edição, evitando duplicidade em saves subsequentes
+          navigate(`/editor/${data.templateId}`, { replace: true });
+        }
       } else {
         alert('Erro ao salvar o modelo: ' + data.error);
       }
@@ -838,15 +843,35 @@ export default function TemplateEditor() {
                 </div>
               )}
 
-              <button 
-                className="btn-danger mt-4"
-                onClick={() => {
-                  setElementosCanvas(elementosCanvas.filter(el => el.id !== elementoAtivo.id));
-                  setElementoSelecionado(null);
-                }}
-              >
-                Remover Elemento
-              </button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button 
+                  className="btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    const novoElemento = {
+                      ...elementoAtivo,
+                      id: Date.now(),
+                      posicao_x: elementoAtivo.posicao_x + 15,
+                      posicao_y: elementoAtivo.posicao_y + 15
+                    };
+                    setElementosCanvas([...elementosCanvas, novoElemento]);
+                    setElementoSelecionado(novoElemento.id);
+                  }}
+                >
+                  📄 Duplicar
+                </button>
+
+                <button 
+                  className="btn-danger"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setElementosCanvas(elementosCanvas.filter(el => el.id !== elementoAtivo.id));
+                    setElementoSelecionado(null);
+                  }}
+                >
+                  🗑️ Excluir
+                </button>
+              </div>
             </div>
           )}
         </aside>
