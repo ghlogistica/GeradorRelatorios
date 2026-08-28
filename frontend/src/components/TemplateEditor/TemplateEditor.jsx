@@ -40,7 +40,10 @@ export default function TemplateEditor() {
   const [resizeStartMouse, setResizeStartMouse] = useState({ x: 0, y: 0 });
   const [resizeStartSize, setResizeStartSize] = useState({ w: 0, h: 0 });
 
-  // 4. IA Generation
+  // 4. View Options
+  const [mostrarGrid, setMostrarGrid] = useState(false);
+
+  // 5. IA Generation
   const [loadingIA, setLoadingIA] = useState(false);
 
   // --- Atalhos de Teclado ---
@@ -399,6 +402,18 @@ export default function TemplateEditor() {
                   <input type="number" step="0.1" value={configFisica.margem} onChange={(e) => setConfigFisica({...configFisica, margem: parseFloat(e.target.value)})} />
                 </div>
               </div>
+              <div className="form-group-row" style={{ marginTop: '10px' }}>
+                <div className="form-group" style={{ width: '100%' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={mostrarGrid}
+                      onChange={(e) => setMostrarGrid(e.target.checked)}
+                    />
+                    <strong>Mostrar Grid de Alinhamento (1cm)</strong>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="form-group queries-group">
@@ -535,6 +550,19 @@ export default function TemplateEditor() {
                   opacity: 0.5
                 }}
               ></div>
+              {mostrarGrid && (
+                <div 
+                  className="grid-overlay" 
+                  style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='38' height='38' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 38 0 L 0 0 0 38' fill='none' stroke='rgba(0,0,0,0.2)' stroke-width='1' stroke-dasharray='4,4'/%3E%3C/svg%3E")`,
+                    backgroundSize: '37.8px 37.8px',
+                    pointerEvents: 'none',
+                    zIndex: 1
+                  }}
+                ></div>
+              )}
               {loadingIA && (
                 <div className="ia-loading-overlay">
                   <div className="spinner"></div>
