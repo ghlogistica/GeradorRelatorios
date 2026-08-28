@@ -553,6 +553,9 @@ export default function TemplateEditor() {
                     fontFamily: el.fonte,
                     fontWeight: el.negrito ? 'bold' : 'normal',
                     fontSize: `${el.tamanho_fonte}px`,
+                    whiteSpace: el.quebra_linha ? 'normal' : 'nowrap',
+                    wordWrap: el.quebra_linha ? 'break-word' : 'normal',
+                    overflow: el.quebra_linha ? 'hidden' : 'visible',
                     backgroundColor: el.tipo_elemento === 'texto' 
                       ? (el.fundo_transparente ? 'transparent' : (el.cor_fundo || 'rgba(255, 255, 255, 0.95)')) 
                       : 'transparent',
@@ -657,6 +660,19 @@ export default function TemplateEditor() {
                   <input type="number" value={elementoAtivo.altura || ''} onChange={(e) => atualizarElementoCanvas('altura', parseInt(e.target.value) || null)} />
                 </div>
               </div>
+
+              {elementoAtivo.tipo_elemento === 'texto' && (
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={elementoAtivo.quebra_linha || false}
+                      onChange={(e) => atualizarElementoCanvas('quebra_linha', e.target.checked)}
+                    />
+                    <strong>Quebrar Linha Automático (Requer Largura)</strong>
+                  </label>
+                </div>
+              )}
 
               {(elementoAtivo.tipo_elemento === 'caixa' || elementoAtivo.tipo_elemento === 'linha' || elementoAtivo.tipo_elemento === 'texto') && (
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

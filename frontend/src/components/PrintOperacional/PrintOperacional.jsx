@@ -221,8 +221,28 @@ export default function PrintOperacional() {
           const halfLeading = fontSizePx * 0.15; // Aprox 15% do tamanho da fonte é espaço em branco no topo
           
           doc.setTextColor(0, 0, 0); 
-          // baseline: 'top' manda o PDF desenhar contando do teto para baixo (igual a Web)
-          doc.text(String(el.valor_resolvido || ''), x + padding, y + padding + halfLeading, { baseline: 'top' });
+          
+          let textToPrint = String(el.valor_resolvido || '');
+          
+          if (el.quebra_linha && el.largura) {
+            // Divide o texto em múltiplas linhas respeitando a largura
+            const maxTextWidth = Math.max(10, el.largura - (padding * 2));
+            let textLines = doc.splitTextToSize(textToPrint, maxTextWidth);
+            
+            // Limita a quantidade de linhas baseada na altura máxima
+            if (el.altura) {
+              const lineHeight = doc.getLineHeight(); 
+              const maxLines = Math.floor((el.altura - (padding * 2)) / lineHeight);
+              if (maxLines > 0 && textLines.length > maxLines) {
+                textLines = textLines.slice(0, maxLines);
+              }
+            }
+            
+            doc.text(textLines, x + padding, y + padding + halfLeading, { baseline: 'top' });
+          } else {
+            // Comportamento normal: uma única linha
+            doc.text(textToPrint, x + padding, y + padding + halfLeading, { baseline: 'top' });
+          }
         }
         else if (el.tipo_elemento === 'caixa') {
           doc.setDrawColor(el.cor_borda || '#000000');
