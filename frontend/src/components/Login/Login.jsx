@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import InstallPWA from '../InstallPWA/InstallPWA';
 import './Login.css'; // I will create a basic CSS inside here or create the file next
 
 export default function Login() {
@@ -18,6 +19,8 @@ export default function Login() {
           <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo" />
           Fazer Login com Google
         </button>
+        
+        <InstallPWA />
       </div>
     </div>
   );
