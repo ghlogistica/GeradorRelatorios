@@ -1,5 +1,5 @@
 # Estágio 1: Build do frontend React (Vite)
-FROM node:18-alpine AS frontend-build
+FROM node:22-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Estágio 2: Setup do backend e cópia do frontend buildado
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 
 # Instalar dependências do backend
